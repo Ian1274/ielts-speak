@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>雅思单词听力播放器</title>
+<style>
+*{box-sizing:border-box;font-family:system-ui}
+body{max-width:900px;margin:20px auto;padding:0 16px}
+textarea{width:100%;height:320px;padding:12px;font-size:16px;border:1px solid #ccc;border-radius:8px;margin-bottom:12px}
+.ctrl{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+button{padding:8px 16px;font-size:15px;border:none;border-radius:6px;background:#2563eb;color:white;cursor:pointer}
+button:disabled{background:#94a3b8}
+select,input{padding:7px;font-size:15px;border:1px solid #aaa;border-radius:6px}
+.info{color:#444;font-size:14px;margin:8px 0}
+</style>
+</head>
+<body>
+<h2>单词播放器｜仅朗读英文</h2>
+<div class="info">粘贴词汇，一行1个；中文自动过滤；推荐Edge浏览器，选英音女声</div>
+<textarea id="wordArea" placeholder="粘贴你的单词列表，一行一个
+innovation
+invention
+device
+equipment
+"></textarea>
+<div class="ctrl">
+<button id="startBtn">开始播放</button>
+<button id="pauseBtn" disabled>暂停</button>
+<button id="stopBtn">停止</button>
+<select id="voiceSel"></select>
+<label>速度:<input id="rate" type="number" value="0.8" min="0.4" max="1.5" step="0.05" style="width:70px"></label>
+<label>间隔(秒):<input id="gap" type="number" value="2.5" min="1" max="10" step="0.25" style="width:70px"></label>
+<label><input id="randMode" type="checkbox">随机顺序</label>
+</div>
+<div class="info">当前播放：<span id="curWord">-</span></div>
+
+<script>
+const wordArea=document.getElementById('wordArea');
+const startBtn=document.getElementById('startBtn');
+const pauseBtn=document.getElementById('pauseBtn');
+const stopBtn=document.getElementById('stopBtn');
+const voiceSel=document.getElementById('voiceSel');
+const rateInp=document.getElementById('rate');
+const gapInp=document.getElementById('gap');
+const randMode=document.getElementById('randMode');
+const curWordEl=document.getElementById('curWord');
+
+let voices=[];
+let wordList=[];
+let idx=0;
+let timer=null;
+let synth=window.speechSynthesis;
+
+function loadVoices(){
+    voices=synth.getVoices();
+    voiceSel.innerHTML='';
+    voices.forEach((v,i)=>{
+        const opt=document.createElement('option');
+        opt.textContent=v.name+' ('+v.lang+')';
+        opt.value=i;
+        voiceSel.appendChild(opt);
+    });
+    // 默认优先选英音
+    let uk=voices.findIndex(x=>x.lang.startsWith('en‑GB'));
+    if(uk>=0) voiceSel.value=uk;
+}
+synth.onvoiceschanged=loadVoices;
+loadVoices();
+
+function extractEnglish(raw){
+    const lines=raw.split(/\r?\n/);
+    const out=[];
+    for(let L of lines){
+        let en=L.replace(/[\u4e00‑\u9fa5]|#|——|…/g,'').trim();
+        if(en) out.push(en);
+    }
+    return out;
+}
+
+function speakOne(word){
+    curWordEl.textContent=word;
+    synth.cancel();
+    const u=new SpeechSynthesisUtterance(word);
+    const v=voices[voiceSel.value];
+    if(v) u.voice=v;
+    u.rate=Number(rateInp.value);
+    u.volume=1;
+    synth.speak(u);
+}
+
+async function playLoop(){
+    wordList=extractEnglish(wordArea.value);
+    if(wordList.length===0){alert('请粘贴单词');return;}
+    if(randMode.checked){
+        for(let i=wordList.length‑1;i>0;i--){
+            const j=Math.floor(Math.random()*(i+1));
+            [wordList[i],wordList[j]]=[wordList[j],wordList[i]];
+        }
+    }
+    idx=0;
+    startBtn.disabled=true;pauseBtn.disabled=false;
+
+    while(idx<wordList.length){
+        speakOne(wordList[idx]);
+        idx++;
+        const gapMs=Number(gapInp.value)*1000;
+        await new Promise(res=>{timer=setTimeout(res,gapMs);});
+        if(!synth.speaking&&idx>=wordList.length)break;
+    }
+    stopPlay();
+}
+
+function stopPlay(){
+    synth.cancel();
+    clearTimeout(timer);
+    idx=0;
+    startBtn.disabled=false;pauseBtn.disabled=true;
+    curWordEl.textContent='‑';
+}
+
+startBtn.onclick=playLoop;
+pauseBtn.onclick=()=>{
+    if(synth.paused) synth.resume();
+    else synth.pause();
+};
+stopBtn.onclick=stopPlay;
+</script>
+</body>
+</html>
