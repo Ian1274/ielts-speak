@@ -1,0 +1,102 @@
+// Voice playback: server TTS (Qwen) via /api/tts with browser speechSynthesis fallback.
+
+const audioEl = new Audio();
+audioEl.preload = "auto";
+
+// ── server TTS (primary) ───────────────────────────────────
+// speakTts resolves when playback ends, rejects on any failure.
+export function speakTts(text, voiceId, rate = 1.0) {
+  const url = `/api/tts?text=${encodeURIComponent(text)}&voice=${encodeURIComponent(voiceId)}&rate=${rate}`;
+  return fetch(url)
+    .then((resp) => {
+      if (!resp.ok) {
+        return resp.json().then(
+          (j) => Promise.reject(new Error(j.detail || "语音合成失败")),
+          () => Promise.reject(new Error("语音合成失败"))
+        );
+      }
+      return resp.blob();
+    })
+    .then((blob) => {
+      audioEl.src = URL.createObjectURL(blob);
+      return new Promise((resolve, reject) => {
+        audioEl.onended = () => resolve();
+        audioEl.onerror = () => reject(new Error("音频播放失败"));
+        audioEl.play().catch(() => reject(new Error("音频播放失败")));
+      });
+    });
+}
+
+// ── browser speechSynthesis (fallback) ─────────────────────
+let voicesPromise = null;
+
+function getVoiceList() {
+  if (!("speechSynthesis" in window)) return [];
+  return window.speechSynthesis.getVoices() || [];
+}
+
+function pickVoice(voices) {
+  const byLang = (prefix) => voices.find((v) => v.lang.toLowerCase().startsWith(prefix));
+  return byLang("en-us") || byLang("en") || voices.find((v) => v.lang.toLowerCase().includes("en")) || null;
+}
+
+export function isSupported() {
+  return "speechSynthesis" in window;
+}
+
+export function ensureVoices() {
+  if (voicesPromise) return voicesPromise;
+  voicesPromise = new Promise((resolve) => {
+    const voices = getVoiceList();
+    if (voices.length > 0) {
+      resolve(pickVoice(voices));
+      return;
+    }
+    const onChanged = () => {
+      window.speechSynthesis.removeEventListener("voiceschanged", onChanged);
+      resolve(pickVoice(getVoiceList()));
+    };
+    window.speechSynthesis.addEventListener("voiceschanged", onChanged);
+    setTimeout(() => {
+      window.speechSynthesis.removeEventListener("voiceschanged", onChanged);
+      resolve(pickVoice(getVoiceList()));
+    }, 3000);
+  });
+  return voicesPromise;
+}
+
+export function speakBrowser(text, voice) {
+  return new Promise((resolve, reject) => {
+    const synth = window.speechSynthesis;
+    if (!synth || !voice) {
+      reject(new Error("当前浏览器不支持语音播报。"));
+      return;
+    }
+    if (synth.speaking) {
+      synth.cancel();
+      setTimeout(() => startUtterance(text, voice, resolve, reject), 80);
+    } else {
+      startUtterance(text, voice, resolve, reject);
+    }
+  });
+}
+
+function startUtterance(text, voice, resolve, reject) {
+  const u = new SpeechSynthesisUtterance(text);
+  u.voice = voice;
+  u.lang = voice.lang;
+  u.rate = 0.95;
+  u.onend = () => resolve();
+  u.onerror = () => reject(new Error("语音播报中断。"));
+  window.speechSynthesis.speak(u);
+}
+
+// ── shared cancel ──────────────────────────────────────────
+export function cancel() {
+  audioEl.pause();
+  if (audioEl.src) {
+    URL.revokeObjectURL(audioEl.src);
+    audioEl.removeAttribute("src");
+  }
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+}

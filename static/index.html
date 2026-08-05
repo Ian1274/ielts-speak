@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>雅思口语 · 随机练习</title>
+  <meta name="description" content="按真实考试节奏随机抽题练习雅思口语：P1/P2/P3 三档，可调题数与停顿。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23e4572e'/%3E%3Ctext x='16' y='23' font-size='18' font-family='serif' font-weight='bold' text-anchor='middle' fill='white'%3E口%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="masthead">
+      <p class="masthead__kicker">IELTS SPEAKING · 随机练习</p>
+      <h1 class="masthead__title">口语</h1>
+      <p class="masthead__note">选档位，设节奏，点开始。像进考场一样开口。</p>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="题型">
+      <button class="tab is-active" role="tab" aria-selected="true" data-part="P1">
+        <span class="tab__name">P1</span><span class="tab__desc">基础问答</span>
+      </button>
+      <button class="tab" role="tab" aria-selected="false" data-part="P2">
+        <span class="tab__name">P2</span><span class="tab__desc">话题卡片</span>
+      </button>
+      <button class="tab" role="tab" aria-selected="false" data-part="P3">
+        <span class="tab__name">P3</span><span class="tab__desc">深入问答</span>
+      </button>
+    </nav>
+
+    <main>
+      <section class="panel config" id="config" aria-label="练习设置">
+        <div class="config-grid">
+          <div class="field field--wide">
+            <span class="field__label" id="sectionLabel">题目类别</span>
+            <div class="chips" role="group" aria-labelledby="sectionLabel">
+              <button class="chip is-active" data-section="大陆新题">大陆新题</button>
+              <button class="chip" data-section="大陆老题">大陆老题</button>
+              <button class="chip" data-section="非大陆新题">非大陆新题</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <span class="field__label" id="countLabel">题目数量</span>
+            <div class="chips" role="group" aria-labelledby="countLabel">
+              <button class="chip" data-count="1">1 题</button>
+              <button class="chip is-active" data-count="2">2 题</button>
+              <button class="chip" data-count="3">3 题</button>
+            </div>
+            <label class="custom">
+              自定义
+              <input type="number" id="countCustom" min="1" max="10" step="1" value="2" inputmode="numeric">
+            </label>
+          </div>
+
+          <div class="field">
+            <span class="field__label" id="pauseLabel">中间停顿</span>
+            <div class="chips" role="group" aria-labelledby="pauseLabel">
+              <button class="chip" data-pause="60">60 秒</button>
+              <button class="chip" data-pause="90">90 秒</button>
+              <button class="chip is-active" data-pause="120">120 秒</button>
+            </div>
+            <label class="custom">
+              自定义
+              <input type="number" id="pauseCustom" min="5" max="300" step="5" value="120" inputmode="numeric">
+            </label>
+          </div>
+
+          <div class="field">
+            <span class="field__label" id="voiceLabel">发音人</span>
+            <select class="select" id="voiceSelect" aria-labelledby="voiceLabel"></select>
+          </div>
+
+          <div class="field">
+            <span class="field__label" id="rateLabel">语速</span>
+            <div class="chips" role="group" aria-labelledby="rateLabel">
+              <button class="chip" data-rate="0.8">稍慢</button>
+              <button class="chip is-active" data-rate="1.0">正常</button>
+              <button class="chip" data-rate="1.2">稍快</button>
+            </div>
+          </div>
+
+          <button class="btn btn--primary btn--block config__start" id="start">开始练习</button>
+        </div>
+        <p class="error" id="error" role="alert" hidden></p>
+      </section>
+
+      <section class="panel session" id="session" aria-label="练习进行中" hidden>
+        <div class="session__head">
+          <p class="progress" role="status" id="progress">第 1 / 2 题</p>
+        </div>
+
+        <div class="dial" id="dial" role="timer" aria-label="倒计时">
+          <svg class="dial__face" viewBox="0 0 200 200" aria-hidden="true">
+            <g id="dialTicks"></g>
+            <g id="dialNums"></g>
+            <g id="dialHand" class="dial__hand"></g>
+            <circle class="dial__hub" cx="100" cy="100" r="3.5"></circle>
+          </svg>
+          <div class="clock" id="clock" aria-hidden="true">--</div>
+        </div>
+        <p class="clock-note" id="clockNote">听题，然后开口作答，计时结束进入下一题。</p>
+
+        <article class="card" id="card" hidden>
+          <p class="card__meta" id="cardMeta"></p>
+          <div class="card__body" id="cardBody"></div>
+        </article>
+
+        <div class="session__actions">
+          <button class="btn btn--ghost" id="replay" hidden>🔊 重听</button>
+          <button class="btn btn--ghost" id="toggleCard">查看题目</button>
+          <button class="btn btn--danger" id="stop">停止</button>
+          <button class="btn btn--primary" id="again" hidden>再来一轮</button>
+          <button class="btn btn--ghost" id="backToConfig" hidden>返回设置</button>
+        </div>
+        <p class="session__done" id="doneLine" hidden>完成！本轮共 <span id="doneCount"></span> 题。</p>
+      </section>
+    </main>
+
+    <footer class="foot">题库：2026 年 5–8 月 · 大陆新题 / 大陆老题 / 非大陆新题</footer>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -14,3 +14,16 @@ wheels/
 
 # macOS
 .DS_Store
+
+# Playwright MCP artifacts
+.playwright-mcp/
+
+# TTS audio cache
+.cache/
+
+# 原始题库素材 (PDF / 未清洗 md)
+2026年*.md
+2026年*.pdf
+
+# 本地 Claude Code 设置 (含 MCP 密钥配置)
+.claude/
