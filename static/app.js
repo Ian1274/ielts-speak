@@ -1,5 +1,5 @@
 import { validateConfig, prepareSession } from "./sampler.js";
-import { speakTts, speakBrowser, ensureVoices, isSupported, cancel } from "./speech.js";
+import { speakTts, speakBrowser, ensureVoices, isSupported, cancel, CancelledError } from "./speech.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -32,6 +32,7 @@ const els = {
   cardBody: $("cardBody"),
   toggleCard: $("toggleCard"),
   replay: $("replay"),
+  pause: $("pause"),
   doneLine: $("doneLine"),
   doneCount: $("doneCount"),
 };
@@ -50,6 +51,10 @@ const session = {
   browserVoice: null,
   cardVisible: false,
   topicVisible: false,
+  paused: false,      // 暂停中
+  phase: null,        // "audio" | "countdown" | null — 当前题所处阶段
+  deadline: null,     // 倒计时绝对截止时间戳(ms)
+  pauseStart: null,   // 本次暂停起始时间戳(ms)
 };
 
 let data = null;
@@ -120,6 +125,10 @@ function showConfig() {
   els.config.hidden = false;
   els.session.hidden = true;
   session.state = "idle";
+  session.paused = false;
+  els.pause.hidden = true;
+  els.pause.textContent = "暂停";
+  els.pause.setAttribute("aria-pressed", "false");
 }
 
 function categoryLine(part, item) {
@@ -177,11 +186,30 @@ els.toggleCard.addEventListener("click", () => {
 
 // P1/P3：喇叭重听当前题
 els.replay.addEventListener("click", () => {
-  if (session.state !== "running" || session.part === "P2") return;
+  if (session.state !== "running" || session.paused || session.phase !== "countdown" || session.part === "P2") return;
   const item = session.items[session.index - 1];
   if (!item) return;
   cancel();
   speakQuestion(item.text);
+});
+
+els.pause.addEventListener("click", () => {
+  if (session.state !== "running") return;
+  if (session.paused) {
+    // 恢复：倒计时阶段把 deadline 顺延暂停时长；语音阶段由 runSequence 重读
+    if (session.phase === "countdown" && session.pauseStart !== null) {
+      session.deadline += Date.now() - session.pauseStart;
+    }
+    session.paused = false;
+    els.pause.textContent = "暂停";
+    els.pause.setAttribute("aria-pressed", "false");
+  } else {
+    session.paused = true;
+    session.pauseStart = Date.now();
+    cancel();
+    els.pause.textContent = "继续";
+    els.pause.setAttribute("aria-pressed", "true");
+  }
 });
 
 els.stop.addEventListener("click", () => {
@@ -234,6 +262,7 @@ async function startSession() {
   session.cancelled = false;
   session.cardVisible = false;
   session.topicVisible = false;
+  session.paused = false;
   els.toggleCard.textContent = session.part === "P2" ? "显示主题" : "查看题目";
   els.card.hidden = false;
   els.cardMeta.hidden = true;
@@ -246,6 +275,7 @@ async function startSession() {
   els.doneLine.hidden = true;
   els.stop.hidden = false;
   els.toggleCard.hidden = false;
+  els.pause.hidden = false;
 
   if (prep.withReplacement) {
     setError("该主题题目不足设定数量，已按规则重复抽取。");
@@ -262,11 +292,20 @@ async function runSequence() {
   for (const item of session.items) {
     if (session.cancelled) break;
     renderItem(item);
+    session.phase = "audio";
     if (session.part !== "P2") {
       await speakQuestion(item.text);
       if (session.cancelled) break;
+      if (session.paused) {           // 语音中被暂停：恢复后重读一遍
+        await waitResume();
+        if (session.cancelled) break;
+        await speakQuestion(item.text);
+        if (session.cancelled) break;
+      }
     }
+    session.phase = "countdown";
     await countdown();
+    session.phase = null;
     if (session.cancelled) break;
   }
   if (!session.cancelled) finishSession();
@@ -278,7 +317,7 @@ async function speakQuestion(text) {
     await speakTts(text, session.voice || "Cherry", session.rate);
     return;
   } catch (err) {
-    if (session.cancelled) return;
+    if (err instanceof CancelledError || session.cancelled || session.paused) return;
     if (isSupported()) {
       if (!session.browserVoice) session.browserVoice = await ensureVoices();
       if (session.browserVoice) {
@@ -299,10 +338,13 @@ async function speakQuestion(text) {
 
 function countdown() {
   return new Promise((resolve) => {
+    session.deadline = Date.now() + session.pauseMs;
+    session.pauseStart = null;
     const startSec = session.pauseMs / 1000;
-    const deadline = Date.now() + session.pauseMs;
     const tick = () => {
-      const remain = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      if (session.cancelled) { stopTimer(); resolve(); return; }
+      if (session.paused) return; // 冻结：不更新显示、不推进计时
+      const remain = Math.max(0, Math.ceil((session.deadline - Date.now()) / 1000));
       els.clock.textContent = String(remain);
       // 指针一圈 = 一题作答时长，与考场挂钟同构
       els.hand.setAttribute("transform", `rotate(${(1 - remain / startSec) * 360} 100 100)`);
@@ -315,6 +357,18 @@ function countdown() {
     };
     tick();
     session.timerId = setInterval(tick, 200);
+  });
+}
+
+// 暂停屏障：runSequence 在语音被暂停中断后等待用户按「继续」。
+function waitResume() {
+  return new Promise((resolve) => {
+    const iv = setInterval(() => {
+      if (!session.paused || session.cancelled) {
+        clearInterval(iv);
+        resolve();
+      }
+    }, 150);
   });
 }
 
@@ -338,6 +392,7 @@ function finishSession() {
   els.stop.hidden = true;
   els.toggleCard.hidden = true;
   els.replay.hidden = true;
+  els.pause.hidden = true;
   els.progress.textContent = "本轮完成";
   els.clockNote.textContent = "再次开始会重新随机抽题。";
 }
