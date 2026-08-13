@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理后台 · 雅思口语随机练习</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <div class="app">
+    <header class="masthead">
+      <p class="masthead__kicker">IELTS SPEAKING · 管理后台</p>
+      <h1 class="masthead__title">用户管理</h1>
+      <p class="masthead__note">建号、重置密码、查看练习统计。</p>
+    </header>
+    <main>
+      <div class="adminbar">
+        <span class="adminbar__user" id="adminUser"></span>
+        <a class="btn btn--ghost btn--small" href="/">← 回练习页</a>
+        <button class="btn btn--ghost btn--small" id="adminLogout">退出登录</button>
+      </div>
+      <p class="error" id="adminError" role="alert" hidden></p>
+
+      <section class="panel" id="adminDenied" hidden>
+        <p>当前账号没有管理员权限。<a href="/">回练习页</a></p>
+      </section>
+
+      <section class="panel" id="adminMain" hidden>
+        <h2 class="admin-h2">新建用户</h2>
+        <form class="admin-form" id="createForm">
+          <input class="input" id="newName" placeholder="用户名" autocomplete="off">
+          <input class="input" id="newPass" type="password" placeholder="密码(至少 6 位)" autocomplete="new-password">
+          <select class="input" id="newRole">
+            <option value="user">普通用户</option>
+            <option value="admin">管理员</option>
+          </select>
+          <button class="btn" type="submit">创建</button>
+        </form>
+
+        <h2 class="admin-h2">用户列表</h2>
+        <table class="atable">
+          <thead>
+            <tr><th>用户名</th><th>角色</th><th>7 天抽题</th><th>总抽题</th><th>创建时间</th><th>操作</th></tr>
+          </thead>
+          <tbody id="userRows"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+  <script type="module" src="admin.js"></script>
+</body>
+</html>

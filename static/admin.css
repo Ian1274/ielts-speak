@@ -1,0 +1,28 @@
+/* 管理后台页专用样式(叠加在 style.css 之上) */
+.adminbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.adminbar__user { color: var(--muted); font-size: 0.9rem; }
+.admin-h2 {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  margin: 1.5rem 0 0.75rem;
+  color: var(--accent);
+}
+.admin-form { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.atable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+.atable th, .atable td {
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+.atable th { color: var(--muted); font-weight: normal; }
+.atable .btn + .btn { margin-left: 0.5rem; }
