@@ -21,6 +21,9 @@ wheels/
 # TTS audio cache
 .cache/
 
+# SQLite 用户数据库
+*.db
+
 # 原始题库素材 (PDF / 未清洗 md)
 2026年*.md
 2026年*.pdf

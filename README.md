@@ -7,13 +7,15 @@
 ## 功能
 
 - **P1 / P2 / P3 三档** tab 切换
-- **随机抽题**:先随机选主题 (Music、喜欢或不喜欢的高建筑…),再在主题下抽指定数量问题
+- **随机抽题**:先随机选主题 (Music、喜欢或不喜欢的高建筑…),再在主题下抽指定数量问题;登录用户按 7 天内已抽题避重加权 (抽过越多次,再出现概率越低)
+- **中途暂停**:暂停即冻结倒计时并打断语音,继续后从剩余时间接续;若语音未播完被暂停,恢复时重读当前题
 - **可配置**:题数 (1–10,默认 2)、停顿 (5–300s,默认 120s)、发音人 (Jennifer / Ryan)、语速 (0.8 / 1.0 / 1.2)
 - **P1/P3**:TTS 语音提问 (阿里云 qwen3-tts-flash),🔊 重听按钮;查看题目显示主题 + 英文题目
 - **P2**:英文题卡开始即显示,点击「显示主题」才显示中文主题
 - **考场挂钟**:指针一圈 = 一题作答时长,最后 10 秒变信号红
 - **移动端适配**:操作栏吸底、大按钮、安全区避让
 - TTS 磁盘缓存 (`.cache/tts/`),重复文本秒回
+- **账号系统**:登录后按人记录抽题历史;管理员在 `/admin.html` 建号、重置密码、查看练习统计
 
 ## 技术栈
 
@@ -65,6 +67,9 @@ systemctl enable --now ielts-speak
 | 变量 | 默认 | 说明 |
 |---|---|---|
 | `QWEN_APIKEY` | — | 必填,百炼 API Key |
+| `IELTS_ADMIN_USER` | — | 必填,管理员用户名 (首次启动自动创建) |
+| `IELTS_ADMIN_PASSWORD` | — | 必填,管理员密码 (同名已有用户会被提升并重置密码) |
+| `IELTS_DB` | `ielts.db` | SQLite 数据库路径 (用户/会话/抽题历史) |
 | `IELTS_SPEAK_TTS_BASEURL` | MaaS 专属域名 | qwen3-tts-flash 端点 |
 | `IELTS_SPEAK_TTS_MODEL` | `qwen3-tts-flash` | TTS 模型 |
 | `IELTS_SPEAK_TTS_CACHE` | `.cache/tts` | TTS 缓存目录 |
@@ -76,9 +81,23 @@ systemctl enable --now ielts-speak
 main.py          FastAPI 应用 (API + 静态托管)
 parser.py        题库 md → JSON (含 PDF 拼接问题清洗)
 tts.py           qwen3-tts-flash 合成 + 磁盘缓存
+db.py            SQLite 连接与建表 (用户/会话/抽题历史)
+auth.py          密码哈希 (PBKDF2-SHA256)、会话、管理员注入
+users_api.py     登录/登出/当前用户 (无注册接口)
+session_api.py   抽题会话 (避重加权 + 历史记录)
+admin_api.py     管理员用户管理端点
+sampling.py      纯抽样逻辑 (衰减权重)
 static/          前端 (HTML/CSS/JS,无框架)
+tests/           pytest (36 个用例)
 2605-08-speak.md 题库 (2026 5–8 月)
 ```
+
+## 账号说明
+
+- 注册关闭:账号全部由管理员在「管理后台」(`/admin.html`,首页登录后可见)创建。
+- 管理员账号由环境变量 `IELTS_ADMIN_USER` / `IELTS_ADMIN_PASSWORD` 注入,仅存于服务器 `.env`,不入库、不进仓库。
+- 未登录可匿名练习 (均匀随机、不记录历史);登录后按人记录抽题历史,用于避重加权。
+- 密码仅存 PBKDF2-SHA256 哈希 (20 万次迭代 + 随机盐),会话为 HttpOnly Cookie,30 天有效。
 
 ## 说明
 
