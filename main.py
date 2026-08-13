@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 from auth import ensure_admin
 from db import connect, init_db
+from users_api import router as users_router
 from parser import ParserError, build_payload, parse_speak_md
 import tts
 
@@ -37,6 +38,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(title="IELTS Speaking Quiz", docs_url=None, redoc_url=None)
     app.add_middleware(GZipMiddleware, minimum_size=1000)
+    app.include_router(users_router)
 
     @app.get("/health")
     def health() -> dict:
