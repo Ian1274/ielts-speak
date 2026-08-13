@@ -3,6 +3,16 @@
 const audioEl = new Audio();
 audioEl.preload = "auto";
 
+let pendingReject = null;
+
+// cancel() 时用于中断正在等待的播放 Promise,区别于播放失败。
+export class CancelledError extends Error {
+  constructor() {
+    super("已取消");
+    this.name = "CancelledError";
+  }
+}
+
 // ── server TTS (primary) ───────────────────────────────────
 // speakTts resolves when playback ends, rejects on any failure.
 export function speakTts(text, voiceId, rate = 1.0) {
@@ -20,9 +30,10 @@ export function speakTts(text, voiceId, rate = 1.0) {
     .then((blob) => {
       audioEl.src = URL.createObjectURL(blob);
       return new Promise((resolve, reject) => {
-        audioEl.onended = () => resolve();
-        audioEl.onerror = () => reject(new Error("音频播放失败"));
-        audioEl.play().catch(() => reject(new Error("音频播放失败")));
+        pendingReject = reject;
+        audioEl.onended = () => { pendingReject = null; resolve(); };
+        audioEl.onerror = () => { pendingReject = null; reject(new Error("音频播放失败")); };
+        audioEl.play().catch(() => { pendingReject = null; reject(new Error("音频播放失败")); });
       });
     });
 }
@@ -86,8 +97,9 @@ function startUtterance(text, voice, resolve, reject) {
   u.voice = voice;
   u.lang = voice.lang;
   u.rate = 0.95;
-  u.onend = () => resolve();
-  u.onerror = () => reject(new Error("语音播报中断。"));
+  pendingReject = reject;
+  u.onend = () => { pendingReject = null; resolve(); };
+  u.onerror = () => { pendingReject = null; reject(new Error("语音播报中断。")); };
   window.speechSynthesis.speak(u);
 }
 
@@ -99,4 +111,9 @@ export function cancel() {
     audioEl.removeAttribute("src");
   }
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  if (pendingReject) {
+    const reject = pendingReject;
+    pendingReject = null;
+    reject(new CancelledError());
+  }
 }
