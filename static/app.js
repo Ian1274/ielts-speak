@@ -1,5 +1,6 @@
 import { validateConfig, prepareSession } from "./sampler.js";
 import { speakTts, speakBrowser, ensureVoices, isSupported, cancel, CancelledError } from "./speech.js";
+import { login, logout, refreshAuthUI } from "./auth.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -35,6 +36,15 @@ const els = {
   pause: $("pause"),
   doneLine: $("doneLine"),
   doneCount: $("doneCount"),
+  authUser: $("authUser"),
+  authLoginBtn: $("authLoginBtn"),
+  authAdminBtn: $("authAdminBtn"),
+  authLogoutBtn: $("authLogoutBtn"),
+  authForm: $("authForm"),
+  authName: $("authName"),
+  authPass: $("authPass"),
+  authLoginSubmit: $("authLoginSubmit"),
+  authError: $("authError"),
 };
 
 const session = {
@@ -229,6 +239,21 @@ els.backToConfig.addEventListener("click", () => {
 
 els.start.addEventListener("click", () => startSession());
 
+async function fetchSession(cfg) {
+  const resp = await fetch("/api/session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(cfg),
+  });
+  if (!resp.ok) {
+    const j = await resp.json().catch(() => ({}));
+    const err = new Error(j.detail || "抽题失败,请重试。");
+    err.status = resp.status;
+    throw err;
+  }
+  return await resp.json();
+}
+
 async function startSession() {
   setError("");
   if (!data) {
@@ -249,10 +274,20 @@ async function startSession() {
     return;
   }
 
-  const prep = prepareSession(data, cfg);
-  if (prep.error) {
-    setError(prep.error);
-    return;
+  let prep;
+  try {
+    prep = await fetchSession({ section: session.section, part: session.part, count });
+  } catch (err) {
+    if (err.status === 422) {
+      setError(err.message);
+      return;
+    }
+    // 服务不可用:回退本地均匀抽样,保证离线兜底
+    prep = prepareSession(data, { section: session.section, part: session.part, count });
+    if (prep.error) {
+      setError(prep.error);
+      return;
+    }
   }
 
   session.state = "running";
@@ -458,3 +493,33 @@ async function loadVoices() {
     els.voiceSelect.hidden = true;
   }
 }
+
+// ── 登录区 ──────────────────────────────────────────────────
+function setAuthError(msg) {
+  els.authError.textContent = msg;
+  els.authError.hidden = !msg;
+}
+
+els.authLoginBtn.addEventListener("click", () => {
+  els.authForm.hidden = !els.authForm.hidden;
+});
+
+els.authLoginSubmit.addEventListener("click", async () => {
+  setAuthError("");
+  try {
+    await login(els.authName.value.trim(), els.authPass.value);
+    els.authForm.hidden = true;
+    els.authName.value = "";
+    els.authPass.value = "";
+    await refreshAuthUI(els);
+  } catch (err) {
+    setAuthError(err.message);
+  }
+});
+
+els.authLogoutBtn.addEventListener("click", async () => {
+  await logout();
+  await refreshAuthUI(els);
+});
+
+refreshAuthUI(els);
