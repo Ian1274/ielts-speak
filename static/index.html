@@ -16,6 +16,19 @@
       <p class="masthead__note">选档位，设节奏，点开始。像进考场一样开口。</p>
     </header>
 
+    <div class="authbar">
+      <span class="authbar__user" id="authUser" hidden></span>
+      <button class="btn btn--ghost btn--small" id="authLoginBtn">登录</button>
+      <a class="btn btn--ghost btn--small" id="authAdminBtn" href="/admin.html" hidden>管理后台</a>
+      <button class="btn btn--ghost btn--small" id="authLogoutBtn" hidden>退出</button>
+    </div>
+    <div class="authform" id="authForm" hidden>
+      <input class="input" id="authName" placeholder="用户名" autocomplete="username">
+      <input class="input" id="authPass" type="password" placeholder="密码" autocomplete="current-password">
+      <button class="btn" id="authLoginSubmit">登录</button>
+      <p class="error" id="authError" role="alert" hidden></p>
+    </div>
+
     <nav class="tabs" role="tablist" aria-label="题型">
       <button class="tab is-active" role="tab" aria-selected="true" data-part="P1">
         <span class="tab__name">P1</span><span class="tab__desc">基础问答</span>
