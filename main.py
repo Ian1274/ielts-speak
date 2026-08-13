@@ -10,6 +10,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
+from db import init_db
 from parser import ParserError, build_payload, parse_speak_md
 import tts
 
@@ -25,6 +26,8 @@ def create_app() -> FastAPI:
         payload = build_payload(parse_speak_md(DATA_FILE))
     except ParserError as exc:
         raise SystemExit(f"题库解析失败: {exc}") from exc
+
+    init_db()
 
     app = FastAPI(title="IELTS Speaking Quiz", docs_url=None, redoc_url=None)
     app.add_middleware(GZipMiddleware, minimum_size=1000)
