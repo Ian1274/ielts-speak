@@ -1,8 +1,9 @@
-import { fetchMe, logout } from "./auth.js";
+import { fetchMe, logout, refreshAuthUI } from "./auth.js";
 
 const $ = (id) => document.getElementById(id);
 const els = {
-  user: $("adminUser"),
+  user: $("authUser"),
+  avatar: $("authAvatar"),
   logout: $("adminLogout"),
   error: $("adminError"),
   denied: $("adminDenied"),
@@ -113,7 +114,7 @@ async function init() {
     location.href = "/login.html?next=/admin.html";
     return;
   }
-  els.user.textContent = `当前:${me.username} (${me.role === "admin" ? "管理员" : "普通用户"})`;
+  await refreshAuthUI({ authUser: els.user, authAvatar: els.avatar, authLogoutBtn: els.logout });
   if (me.role !== "admin") {
     els.denied.hidden = false;
     return;

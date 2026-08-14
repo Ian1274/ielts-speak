@@ -10,17 +10,24 @@
 </head>
 <body>
   <div class="app">
-    <header class="masthead">
-      <p class="masthead__kicker">IELTS SPEAKING · 随机练习</p>
-      <h1 class="masthead__title">口语</h1>
-      <p class="masthead__note">选档位，设节奏，点开始。像进考场一样开口。</p>
+    <header class="masthead masthead--row">
+      <div>
+        <p class="masthead__kicker">IELTS SPEAKING · 随机练习</p>
+        <h1 class="masthead__title">口语</h1>
+        <p class="masthead__note">选档位，设节奏，点开始。像进考场一样开口。</p>
+      </div>
+      <details class="acct" id="acctMenu">
+        <summary class="acct__trigger" aria-label="账号菜单">
+          <span class="acct__avatar" id="authAvatar" aria-hidden="true"></span>
+          <span class="acct__name" id="authUser" hidden></span>
+          <span class="acct__caret" aria-hidden="true"></span>
+        </summary>
+        <div class="acct__menu">
+          <a id="authAdminBtn" href="/admin.html" hidden>管理后台</a>
+          <button id="authLogoutBtn" hidden>退出登录</button>
+        </div>
+      </details>
     </header>
-
-    <div class="authbar">
-      <span class="authbar__user" id="authUser" hidden></span>
-      <a class="btn btn--ghost btn--small" id="authAdminBtn" href="/admin.html" hidden>管理后台</a>
-      <button class="btn btn--ghost btn--small" id="authLogoutBtn" hidden>退出</button>
-    </div>
 
     <nav class="tabs" role="tablist" aria-label="题型">
       <button class="tab is-active" role="tab" aria-selected="true" data-part="P1">

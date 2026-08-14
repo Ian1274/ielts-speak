@@ -9,17 +9,25 @@
 </head>
 <body>
   <div class="app">
-    <header class="masthead">
-      <p class="masthead__kicker">IELTS SPEAKING · 管理后台</p>
-      <h1 class="masthead__title">用户管理</h1>
-      <p class="masthead__note">建号、重置密码、查看练习统计。</p>
+    <header class="masthead masthead--row">
+      <div>
+        <p class="masthead__kicker">IELTS SPEAKING · 管理后台</p>
+        <h1 class="masthead__title">用户管理</h1>
+        <p class="masthead__note">建号、重置密码、查看练习统计。</p>
+      </div>
+      <details class="acct" id="acctMenu">
+        <summary class="acct__trigger" aria-label="账号菜单">
+          <span class="acct__avatar" id="authAvatar" aria-hidden="true"></span>
+          <span class="acct__name" id="authUser" hidden></span>
+          <span class="acct__caret" aria-hidden="true"></span>
+        </summary>
+        <div class="acct__menu">
+          <a href="/">回练习页</a>
+          <button id="adminLogout">退出登录</button>
+        </div>
+      </details>
     </header>
     <main>
-      <div class="adminbar">
-        <span class="adminbar__user" id="adminUser"></span>
-        <a class="btn btn--ghost btn--small" href="/">← 回练习页</a>
-        <button class="btn btn--ghost btn--small" id="adminLogout">退出登录</button>
-      </div>
       <p class="error" id="adminError" role="alert" hidden></p>
 
       <section class="panel" id="adminDenied" hidden>

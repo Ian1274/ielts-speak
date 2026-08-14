@@ -1,12 +1,4 @@
 /* 管理后台页专用样式(叠加在 style.css 之上) */
-.adminbar {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-.adminbar__user { color: var(--muted); font-size: 0.9rem; }
 .admin-h2 {
   font-family: var(--font-display);
   font-size: 1.15rem;

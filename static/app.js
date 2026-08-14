@@ -37,6 +37,7 @@ const els = {
   doneLine: $("doneLine"),
   doneCount: $("doneCount"),
   authUser: $("authUser"),
+  authAvatar: $("authAvatar"),
   authAdminBtn: $("authAdminBtn"),
   authLogoutBtn: $("authLogoutBtn"),
 };

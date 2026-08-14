@@ -27,13 +27,16 @@ export async function logout() {
   await fetch("/api/auth/logout", { method: "POST" });
 }
 
-// els: {authUser, authLoginBtn, authAdminBtn, authLogoutBtn} — 全部可选
+// els: {authUser, authAvatar, authLoginBtn, authAdminBtn, authLogoutBtn} — 全部可选
 export async function refreshAuthUI(els) {
   const me = await fetchMe();
   const loggedIn = Boolean(me);
   if (els.authUser) {
     els.authUser.hidden = !loggedIn;
-    if (me) els.authUser.textContent = `${me.username}${me.role === "admin" ? " · 管理员" : ""}`;
+    if (me) els.authUser.textContent = me.username;
+  }
+  if (els.authAvatar && me) {
+    els.authAvatar.textContent = me.username.charAt(0).toUpperCase();
   }
   if (els.authLoginBtn) els.authLoginBtn.hidden = loggedIn;
   if (els.authAdminBtn) els.authAdminBtn.hidden = !(loggedIn && me.role === "admin");
