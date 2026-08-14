@@ -27,7 +27,7 @@ export async function logout() {
   await fetch("/api/auth/logout", { method: "POST" });
 }
 
-// els: {authUser, authAvatar, authLoginBtn, authAdminBtn, authLogoutBtn} — 全部可选
+// els: {authUser, authAvatar, authAdminBtn, authLogoutBtn} — 全部可选
 export async function refreshAuthUI(els) {
   const me = await fetchMe();
   const loggedIn = Boolean(me);
@@ -38,7 +38,6 @@ export async function refreshAuthUI(els) {
   if (els.authAvatar && me) {
     els.authAvatar.textContent = me.username.charAt(0).toUpperCase();
   }
-  if (els.authLoginBtn) els.authLoginBtn.hidden = loggedIn;
   if (els.authAdminBtn) els.authAdminBtn.hidden = !(loggedIn && me.role === "admin");
   if (els.authLogoutBtn) els.authLogoutBtn.hidden = !loggedIn;
 }
