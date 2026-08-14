@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 · 雅思口语随机练习</title>
+  <meta name="description" content="登录后开始雅思口语随机练习。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23e4572e'/%3E%3Ctext x='16' y='23' font-size='18' font-family='serif' font-weight='bold' text-anchor='middle' fill='white'%3E口%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="login.css">
+</head>
+<body>
+  <div class="app login-page">
+    <header class="masthead">
+      <p class="masthead__kicker">IELTS SPEAKING · 随机练习</p>
+      <h1 class="masthead__title">登录</h1>
+      <p class="masthead__note">账号由管理员发放。登录后开始练习。</p>
+    </header>
+
+    <main>
+      <form class="panel login-card" id="loginForm">
+        <label class="login-card__field">
+          <span class="login-card__label">用户名</span>
+          <input class="input" id="loginName" autocomplete="username" autofocus>
+        </label>
+        <label class="login-card__field">
+          <span class="login-card__label">密码</span>
+          <input class="input" id="loginPass" type="password" autocomplete="current-password">
+        </label>
+        <p class="error" id="loginError" role="alert" hidden></p>
+        <button class="btn btn--primary btn--block" type="submit" id="loginSubmit">登录</button>
+      </form>
+    </main>
+
+    <footer class="foot">题库:2026 年 5–8 月 · 大陆新题 / 大陆老题 / 非大陆新题</footer>
+  </div>
+
+  <script type="module" src="login.js"></script>
+</body>
+</html>

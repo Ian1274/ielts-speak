@@ -1,0 +1,11 @@
+/* 登录页专用样式(叠加在 style.css 之上) */
+.login-page { max-width: 520px; }
+
+.login-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+.login-card__field { display: flex; flex-direction: column; gap: 0.4rem; }
+.login-card__label { color: var(--muted); font-size: 0.85rem; }
