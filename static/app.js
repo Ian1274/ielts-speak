@@ -1,6 +1,6 @@
 import { validateConfig, prepareSession } from "./sampler.js";
 import { speakTts, speakBrowser, ensureVoices, isSupported, cancel, CancelledError } from "./speech.js";
-import { login, logout, refreshAuthUI } from "./auth.js";
+import { fetchMe, logout, refreshAuthUI } from "./auth.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -37,14 +37,8 @@ const els = {
   doneLine: $("doneLine"),
   doneCount: $("doneCount"),
   authUser: $("authUser"),
-  authLoginBtn: $("authLoginBtn"),
   authAdminBtn: $("authAdminBtn"),
   authLogoutBtn: $("authLogoutBtn"),
-  authForm: $("authForm"),
-  authName: $("authName"),
-  authPass: $("authPass"),
-  authLoginSubmit: $("authLoginSubmit"),
-  authError: $("authError"),
 };
 
 const session = {
@@ -494,32 +488,20 @@ async function loadVoices() {
   }
 }
 
-// ── 登录区 ──────────────────────────────────────────────────
-function setAuthError(msg) {
-  els.authError.textContent = msg;
-  els.authError.hidden = !msg;
-}
-
-els.authLoginBtn.addEventListener("click", () => {
-  els.authForm.hidden = !els.authForm.hidden;
-});
-
-els.authLoginSubmit.addEventListener("click", async () => {
-  setAuthError("");
-  try {
-    await login(els.authName.value.trim(), els.authPass.value);
-    els.authForm.hidden = true;
-    els.authName.value = "";
-    els.authPass.value = "";
-    await refreshAuthUI(els);
-  } catch (err) {
-    setAuthError(err.message);
-  }
-});
-
+// ── 登录态 ──────────────────────────────────────────────────
+// 强制登录:未登录一律回登录页;登出后回登录页。
 els.authLogoutBtn.addEventListener("click", async () => {
   await logout();
-  await refreshAuthUI(els);
+  location.href = "/login.html";
 });
 
-refreshAuthUI(els);
+async function initAuth() {
+  const me = await fetchMe();
+  if (!me) {
+    location.href = "/login.html?next=/";
+    return;
+  }
+  await refreshAuthUI(els);
+}
+
+initAuth();

@@ -22,7 +22,7 @@ function setError(msg) {
 async function loadUsers() {
   const resp = await fetch("/api/admin/users");
   if (resp.status === 401) {
-    location.href = "/";
+    location.href = "/login.html?next=/admin.html";
     return;
   }
   if (resp.status === 403) {
@@ -110,7 +110,7 @@ els.logout.addEventListener("click", async () => {
 async function init() {
   const me = await fetchMe();
   if (!me) {
-    location.href = "/";
+    location.href = "/login.html?next=/admin.html";
     return;
   }
   els.user.textContent = `当前:${me.username} (${me.role === "admin" ? "管理员" : "普通用户"})`;
