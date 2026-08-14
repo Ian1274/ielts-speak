@@ -1,11 +1,14 @@
-"""POST /api/session — server-side weighted sampling + history recording."""
+"""POST /api/session — server-side weighted sampling + history recording.
+
+强制登录:每位用户按 7 天内抽题历史避重加权,并记录本轮抽题。
+"""
 import random
 from collections import Counter
 
 from fastapi import APIRouter, Cookie, HTTPException
 from pydantic import BaseModel
 
-from auth import get_current_user
+from auth import require_user
 from db import connect
 from sampling import sample_session
 from users_api import COOKIE_NAME
@@ -43,26 +46,23 @@ def create_session_router(payload: dict) -> APIRouter:
 
         conn = connect()
         try:
-            user = get_current_user(conn, token)
-            if user is None:
-                recent = Counter()
-            else:
-                rows = conn.execute(
-                    """
-                    SELECT item_key, COUNT(*) AS c FROM history
-                    WHERE user_id = ? AND drawn_at >= datetime('now', '-7 days')
-                    GROUP BY item_key
-                    """,
-                    (user["id"],),
-                ).fetchall()
-                recent = Counter({r["item_key"]: r["c"] for r in rows})
+            user = require_user(conn, token)
+            rows = conn.execute(
+                """
+                SELECT item_key, COUNT(*) AS c FROM history
+                WHERE user_id = ? AND drawn_at >= datetime('now', '-7 days')
+                GROUP BY item_key
+                """,
+                (user["id"],),
+            ).fetchall()
+            recent = Counter({r["item_key"]: r["c"] for r in rows})
 
             rng = random.Random()
             items, with_replacement, keys = sample_session(
                 payload, body.section, body.part, body.count, recent, rng
             )
 
-            if user is not None and keys:
+            if keys:
                 rows = [
                     (user["id"], body.section, body.part, it["topic"], k)
                     for k, it in zip(keys, items)

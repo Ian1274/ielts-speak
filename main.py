@@ -5,16 +5,16 @@ Serves the static frontend plus the parsed question bank at /api/data.
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Cookie, FastAPI, HTTPException, Query
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from admin_api import router as admin_router
-from auth import ensure_admin
+from auth import ensure_admin, require_user
 from db import connect, init_db
 from session_api import create_session_router
-from users_api import router as users_router
+from users_api import COOKIE_NAME, router as users_router
 from parser import ParserError, build_payload, parse_speak_md
 import tts
 
@@ -49,14 +49,24 @@ def create_app() -> FastAPI:
         return {"status": "ok"}
 
     @app.get("/api/data")
-    def api_data() -> JSONResponse:
+    def api_data(token: str | None = Cookie(default=None, alias=COOKIE_NAME)) -> JSONResponse:
+        conn = connect()
+        try:
+            require_user(conn, token)
+        finally:
+            conn.close()
         try:
             return JSONResponse(payload, headers={"Cache-Control": "no-store"})
         except Exception as exc:  # defensive: never leak raw failures
             raise HTTPException(status_code=500, detail=f"题库解析失败: {exc}") from exc
 
     @app.get("/api/voices")
-    def api_voices() -> JSONResponse:
+    def api_voices(token: str | None = Cookie(default=None, alias=COOKIE_NAME)) -> JSONResponse:
+        conn = connect()
+        try:
+            require_user(conn, token)
+        finally:
+            conn.close()
         return JSONResponse(
             {"voices": [{"id": v, "label": label} for v, label in tts.VOICES.items()]}
         )
@@ -66,7 +76,13 @@ def create_app() -> FastAPI:
         text: str = Query(..., min_length=1),
         voice: str = Query(tts.DEFAULT_VOICE),
         rate: float = Query(tts.DEFAULT_RATE, ge=tts.MIN_RATE, le=tts.MAX_RATE),
+        token: str | None = Cookie(default=None, alias=COOKIE_NAME),
     ) -> Response:
+        conn = connect()
+        try:
+            require_user(conn, token)
+        finally:
+            conn.close()
         error = tts.validate(voice, text, rate)
         if error:
             raise HTTPException(status_code=422, detail=error)
