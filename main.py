@@ -15,19 +15,19 @@ from auth import ensure_admin, require_user
 from db import connect, init_db
 from session_api import create_session_router
 from users_api import COOKIE_NAME, router as users_router
-from parser import ParserError, build_payload, parse_speak_md
+from parser import ParserError, build_payload, parse_question_bank
 import tts
 
 BASE_DIR = Path(__file__).resolve().parent
-DATA_FILE = Path(
-    os.environ.get("IELTS_SPEAK_DATA", str(BASE_DIR / "2605-08-speak.md"))
+BANK_DIR = Path(
+    os.environ.get("IELTS_SPEAK_DATA", str(BASE_DIR / "question_bank"))
 )
 
 
 def create_app() -> FastAPI:
     # Parse once at startup; structural errors fail fast so systemd logs them.
     try:
-        payload = build_payload(parse_speak_md(DATA_FILE))
+        payload = build_payload(parse_question_bank(BANK_DIR))
     except ParserError as exc:
         raise SystemExit(f"题库解析失败: {exc}") from exc
 
