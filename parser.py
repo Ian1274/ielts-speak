@@ -108,10 +108,10 @@ def _parse_file(
     name: str | None = None
     card: list[str] = []
     questions: list[str] = []
-    in_p3 = False  # content after the "### P3" marker
+    cur_part: str | None = None  # part the following content belongs to
 
     def flush() -> None:
-        nonlocal name, card, questions, in_p3
+        nonlocal name, card, questions, cur_part
         if name is None:
             return
         if "P1" in parts and questions:
@@ -131,7 +131,7 @@ def _parse_file(
                       questions=_join_questions(questions), card=None,
                       paired_topic=name, paired_part="P3")
             )
-        name, card, questions, in_p3 = None, [], [], False
+        name, card, questions, cur_part = None, [], [], None
 
     for lineno, raw in enumerate(lines, 1):
         if lineno == header_lineno:
@@ -152,12 +152,12 @@ def _parse_file(
                 flush()
                 name = rest
                 continue
-            if level == 3 and rest == "P3" and "P3" in parts:
+            if level == 3 and rest in parts:
                 if name is None:
                     raise ParserError(
-                        f"{path.name}: 第 {lineno} 行: P3 标记前缺少主题标题"
+                        f"{path.name}: 第 {lineno} 行: {rest} 标记前缺少主题标题"
                     )
-                in_p3 = True
+                cur_part = rest
                 continue
             raise ParserError(
                 f"{path.name}: 第 {lineno} 行: 无法识别的标题 {stripped!r}"
@@ -169,10 +169,16 @@ def _parse_file(
         line = _clean_line(stripped)
         if not line or IMAGE_LINE.match(line):
             continue
-        if "P1" in parts or in_p3:
+        if "P1" in parts and cur_part is None:
+            questions.append(line)
+        elif cur_part == "P2":
+            card.append(line)
+        elif cur_part in ("P1", "P3"):
             questions.append(line)
         else:
-            card.append(line)
+            raise ParserError(
+                f"{path.name}: 第 {lineno} 行: 内容 {line[:30]!r} 前缺少 P2/P3 标记"
+            )
     flush()
     return {p: tuple(topics[p]) for p in parts}
 

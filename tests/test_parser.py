@@ -107,6 +107,7 @@ def test_p2p3_split_into_two_topics(tmp_path):
     f.write_text(
         "# 大陆新题 P2&3\n\n"
         "## 主题A\n\n"
+        "### P2\n\n"
         "Describe a thing\n"
         "You should say:\n"
         "What it is\n"
@@ -118,6 +119,15 @@ def test_p2p3_split_into_two_topics(tmp_path):
     assert [t.name for t in topics["P2"]] == ["主题A"]
     assert topics["P2"][0].card == ("Describe a thing", "You should say:", "What it is")
     assert topics["P3"][0].questions == ("Why do people like it?",)
+
+
+def test_p2p3_content_before_marker_raises(tmp_path):
+    d = tmp_path / "mainland" / "new"
+    d.mkdir(parents=True)
+    f = d / "p2p3.md"
+    f.write_text("# 大陆新题 P2&3\n\n## 主题A\n\nDescribe a thing\n", encoding="utf-8")
+    with pytest.raises(ParserError, match="缺少 P2/P3 标记"):
+        _parse_file(f, "大陆新题", "P2&3", ("P2", "P3"))
 
 
 def test_missing_file_raises(tmp_path):
