@@ -6,9 +6,10 @@ import pytest
 from parser import (
     ParserError,
     SECTION_SOURCES,
+    FILE_LAYOUT,
     build_payload,
     parse_question_bank,
-    _parse_part_file,
+    _parse_file,
     _split_questions,
 )
 
@@ -48,6 +49,13 @@ def test_p3_pairs_with_p2_topic():
             assert t.paired_topic == t.name
 
 
+def test_p2p3_files_pair_every_p3_with_p2():
+    """Every P3 block in p2p3.md shares its topic's P2 card name."""
+    tree = parse_question_bank(BANK)
+    for section, parts in tree.items():
+        assert {t.name for t in parts["P3"]} == {t.name for t in parts["P2"]}, section
+
+
 def test_build_payload_serializable():
     payload = build_payload(parse_question_bank(BANK))
     assert payload["source"] == "question_bank"
@@ -68,19 +76,48 @@ def _write_part(tmp_path: Path, header: str, body: str) -> Path:
 def test_header_mismatch_raises(tmp_path):
     f = _write_part(tmp_path, "# 大陆老题 P1", "## T\n\nQ?\n")
     with pytest.raises(ParserError, match="首行标题"):
-        _parse_part_file(f, "大陆新题", "P1")
+        _parse_file(f, "大陆新题", "P1", ("P1",))
 
 
 def test_extra_h1_raises(tmp_path):
     f = _write_part(tmp_path, "# 大陆新题 P1", "## T\n\nQ?\n\n# stray\n")
     with pytest.raises(ParserError, match="额外一级标题"):
-        _parse_part_file(f, "大陆新题", "P1")
+        _parse_file(f, "大陆新题", "P1", ("P1",))
 
 
 def test_content_before_topic_raises(tmp_path):
     f = _write_part(tmp_path, "# 大陆新题 P1", "Q?\n")
     with pytest.raises(ParserError, match="缺少主题标题"):
-        _parse_part_file(f, "大陆新题", "P1")
+        _parse_file(f, "大陆新题", "P1", ("P1",))
+
+
+def test_p3_marker_before_topic_raises(tmp_path):
+    d = tmp_path / "mainland" / "new"
+    d.mkdir(parents=True)
+    f = d / "p2p3.md"
+    f.write_text("# 大陆新题 P2&3\n\n### P3\n\nQ?\n", encoding="utf-8")
+    with pytest.raises(ParserError, match="P3 标记前缺少主题标题"):
+        _parse_file(f, "大陆新题", "P2&3", ("P2", "P3"))
+
+
+def test_p2p3_split_into_two_topics(tmp_path):
+    d = tmp_path / "mainland" / "new"
+    d.mkdir(parents=True)
+    f = d / "p2p3.md"
+    f.write_text(
+        "# 大陆新题 P2&3\n\n"
+        "## 主题A\n\n"
+        "Describe a thing\n"
+        "You should say:\n"
+        "What it is\n"
+        "\n### P3\n\n"
+        "Why do people like it?\n",
+        encoding="utf-8",
+    )
+    topics = _parse_file(f, "大陆新题", "P2&3", ("P2", "P3"))
+    assert [t.name for t in topics["P2"]] == ["主题A"]
+    assert topics["P2"][0].card == ("Describe a thing", "You should say:", "What it is")
+    assert topics["P3"][0].questions == ("Why do people like it?",)
 
 
 def test_missing_file_raises(tmp_path):
@@ -100,5 +137,5 @@ def test_split_questions_splits_joined():
 
 def test_all_layout_files_exist():
     for (region, kind), _ in SECTION_SOURCES:
-        for part in ("p1.md", "p2.md", "p3.md"):
-            assert (BANK / region / kind / part).is_file(), f"{region}/{kind}/{part}"
+        for filename, _, _ in FILE_LAYOUT:
+            assert (BANK / region / kind / filename).is_file(), f"{region}/{kind}/{filename}"

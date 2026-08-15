@@ -1,15 +1,16 @@
 """Parse question_bank/ md files into the JSON payload served by /api/data.
 
-Layout: question_bank/<region>/<kind>/p{1,2,3}.md
+Layout: question_bank/<region>/<kind>/{p1.md, p2p3.md}
 
   region × kind → section name:
     mainland/new       → 大陆新题
     mainland/old       → 大陆老题
     non-mainland/new   → 非大陆新题
 
-Each file starts with a "# <section> <part>" header, then "## <topic>"
-blocks. P2 blocks hold card lines; P1/P3 blocks hold questions. P3 topics
-share the topic name with their P2 counterpart for pairing.
+Each file starts with a "# <section> <part label>" header, then "## <topic>"
+blocks. p1.md blocks hold questions. p2p3.md blocks hold the P2 card lines,
+then a "### P3" marker followed by the topic's P3 questions; the P3 topic
+shares the P2 topic name for pairing.
 
 Pure module: no I/O at import time, immutable dataclasses, never mutates input.
 """
@@ -25,6 +26,11 @@ SECTION_SOURCES: tuple[tuple[tuple[str, str], str], ...] = (
     (("mainland", "new"), "大陆新题"),
     (("mainland", "old"), "大陆老题"),
     (("non-mainland", "new"), "非大陆新题"),
+)
+# File name → (header part label, parts it may emit).
+FILE_LAYOUT: tuple[tuple[str, str, tuple[str, ...]], ...] = (
+    ("p1.md", "P1", ("P1",)),
+    ("p2p3.md", "P2&3", ("P2", "P3")),
 )
 
 # Defensive cleanup for PDF-extraction artifacts (see /tmp/gen_bank.py):
@@ -72,8 +78,17 @@ def _clean_line(raw: str) -> str:
     return STRIP_HEADING_PREFIX.sub("", raw.strip())
 
 
-def _parse_part_file(path: Path, section: str, part: str) -> tuple[Topic, ...]:
-    """Parse one part file into its topics.
+def _join_questions(lines: list[str]) -> tuple[str, ...]:
+    questions: tuple[str, ...] = ()
+    for line in lines:
+        questions = questions + _split_questions(line)
+    return questions
+
+
+def _parse_file(
+    path: Path, section: str, part_label: str, parts: tuple[str, ...]
+) -> dict[str, tuple[Topic, ...]]:
+    """Parse one bank file into its topics, keyed by part.
 
     Raises ParserError with file name and line number on structural drift.
     """
@@ -83,36 +98,40 @@ def _parse_part_file(path: Path, section: str, part: str) -> tuple[Topic, ...]:
         raise ParserError(f"无法读取题库文件 {path}: {exc}") from exc
 
     lines = text.splitlines()
-    header_lineno = next(
-        (i for i, s in enumerate(lines, 1) if s.strip()), 0
-    )
+    header_lineno = next((i for i, s in enumerate(lines, 1) if s.strip()), 0)
     header = lines[header_lineno - 1].strip() if header_lineno else ""
-    expected = f"# {section} {part}"
+    expected = f"# {section} {part_label}"
     if header != expected:
         raise ParserError(f"{path.name}: 首行标题应为 {expected!r}, 实为 {header!r}")
 
-    topics: list[Topic] = []
+    topics: dict[str, list[Topic]] = {p: [] for p in parts}
     name: str | None = None
-    content: list[str] = []
+    card: list[str] = []
+    questions: list[str] = []
+    in_p3 = False  # content after the "### P3" marker
 
-    def flush(lineno: int) -> None:
-        nonlocal name, content
+    def flush() -> None:
+        nonlocal name, card, questions, in_p3
         if name is None:
             return
-        if part == "P2":
-            topics.append(
-                Topic(name=name, part=part, questions=(),
-                      card=tuple(content), paired_topic=name, paired_part=part)
+        if "P1" in parts and questions:
+            topics["P1"].append(
+                Topic(name=name, part="P1",
+                      questions=_join_questions(questions), card=None,
+                      paired_topic=name, paired_part="P1")
             )
-        else:
-            questions: tuple[str, ...] = ()
-            for line in content:
-                questions = questions + _split_questions(line)
-            topics.append(
-                Topic(name=name, part=part, questions=questions, card=None,
-                      paired_topic=name, paired_part=part)
+        if "P2" in parts and card:
+            topics["P2"].append(
+                Topic(name=name, part="P2", questions=(),
+                      card=tuple(card), paired_topic=name, paired_part="P2")
             )
-        name, content = None, []
+        if "P3" in parts and questions:
+            topics["P3"].append(
+                Topic(name=name, part="P3",
+                      questions=_join_questions(questions), card=None,
+                      paired_topic=name, paired_part="P3")
+            )
+        name, card, questions, in_p3 = None, [], [], False
 
     for lineno, raw in enumerate(lines, 1):
         if lineno == header_lineno:
@@ -129,13 +148,20 @@ def _parse_part_file(path: Path, section: str, part: str) -> tuple[Topic, ...]:
                 raise ParserError(
                     f"{path.name}: 第 {lineno} 行: 不允许的额外一级标题 {stripped!r}"
                 )
-            if level != 2 or not rest:
-                raise ParserError(
-                    f"{path.name}: 第 {lineno} 行: 主题标题应为二级标题, 实为 {stripped!r}"
-                )
-            flush(lineno)
-            name = rest
-            continue
+            if level == 2 and rest:
+                flush()
+                name = rest
+                continue
+            if level == 3 and rest == "P3" and "P3" in parts:
+                if name is None:
+                    raise ParserError(
+                        f"{path.name}: 第 {lineno} 行: P3 标记前缺少主题标题"
+                    )
+                in_p3 = True
+                continue
+            raise ParserError(
+                f"{path.name}: 第 {lineno} 行: 无法识别的标题 {stripped!r}"
+            )
         if name is None:
             raise ParserError(
                 f"{path.name}: 第 {lineno} 行: 内容 {stripped[:30]!r} 前缺少主题标题"
@@ -143,9 +169,12 @@ def _parse_part_file(path: Path, section: str, part: str) -> tuple[Topic, ...]:
         line = _clean_line(stripped)
         if not line or IMAGE_LINE.match(line):
             continue
-        content.append(line)
-    flush(len(lines) + 1)
-    return tuple(topics)
+        if "P1" in parts or in_p3:
+            questions.append(line)
+        else:
+            card.append(line)
+    flush()
+    return {p: tuple(topics[p]) for p in parts}
 
 
 def parse_question_bank(bank_dir: Path) -> dict[str, dict[str, tuple[Topic, ...]]]:
@@ -155,12 +184,12 @@ def parse_question_bank(bank_dir: Path) -> dict[str, dict[str, tuple[Topic, ...]
     """
     tree: dict[str, dict[str, tuple[Topic, ...]]] = {}
     for (region, kind), section in SECTION_SOURCES:
-        parts: dict[str, tuple[Topic, ...]] = {}
-        for part in PART_ORDER:
-            parts[part] = _parse_part_file(
-                bank_dir / region / kind / f"{part.lower()}.md", section, part
+        merged: dict[str, tuple[Topic, ...]] = {}
+        for filename, part_label, parts in FILE_LAYOUT:
+            merged.update(
+                _parse_file(bank_dir / region / kind / filename, section, part_label, parts)
             )
-        tree[section] = parts
+        tree[section] = merged
 
     _resolve_p3_pairs(tree)
     return _drop_empty_topics(tree)
