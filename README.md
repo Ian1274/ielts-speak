@@ -73,13 +73,13 @@ systemctl enable --now ielts-speak
 | `IELTS_SPEAK_TTS_BASEURL` | MaaS 专属域名 | qwen3-tts-flash 端点 |
 | `IELTS_SPEAK_TTS_MODEL` | `qwen3-tts-flash` | TTS 模型 |
 | `IELTS_SPEAK_TTS_CACHE` | `.cache/tts` | TTS 缓存目录 |
-| `IELTS_SPEAK_DATA` | `2605-08-speak.md` | 题库路径 |
+| `IELTS_SPEAK_DATA` | `question_bank/` | 题库目录 |
 
 ## 项目结构
 
 ```
 main.py          FastAPI 应用 (API + 静态托管)
-parser.py        题库 md → JSON (含 PDF 拼接问题清洗)
+parser.py        题库 md → JSON (question_bank/ 多文件)
 tts.py           qwen3-tts-flash 合成 + 磁盘缓存
 db.py            SQLite 连接与建表 (用户/会话/抽题历史)
 auth.py          密码哈希 (PBKDF2-SHA256)、会话、管理员注入
@@ -88,8 +88,8 @@ session_api.py   抽题会话 (避重加权 + 历史记录)
 admin_api.py     管理员用户管理端点
 sampling.py      纯抽样逻辑 (衰减权重)
 static/          前端 (HTML/CSS/JS,无框架)
-tests/           pytest (39 个用例)
-2605-08-speak.md 题库 (2026 5–8 月)
+tests/           pytest (50 个用例)
+question_bank/   题库 (2026 5–8 月): mainland|non-mainland × new|old × p1|p2|p3
 ```
 
 ## 账号说明
