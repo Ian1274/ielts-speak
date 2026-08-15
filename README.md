@@ -89,7 +89,7 @@ admin_api.py     管理员用户管理端点
 sampling.py      纯抽样逻辑 (衰减权重)
 static/          前端 (HTML/CSS/JS,无框架)
 tests/           pytest (50 个用例)
-question_bank/   题库 (2026 5–8 月): mainland|non-mainland × new|old × p1|p2|p3
+question_bank/   题库 (2026 5–8 月): mainland|non-mainland × new|old × p1|p2p3 (P3 随 P2 主题存放)
 ```
 
 ## 账号说明
