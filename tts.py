@@ -1,7 +1,12 @@
 """TTS synthesis via DashScope qwen3-tts-flash (HTTP, non-realtime).
 
-Audio is cached on disk keyed by (voice, text) hash, so each question is
-synthesized only once per voice.
+Audio is cached on disk keyed by (model, instructions, voice, rate, text)
+hash, so each question is synthesized only once per voice. We use the
+plain flash model (not instruct-flash): measured pitch shows
+instruct-flash outputs a high, gender-muddled voice for both sexes
+(Ethan 222Hz / Jennifer 263Hz), while flash keeps real male/female
+timbre (Ethan 121Hz / Jennifer 193Hz). Tone instructions were dropped
+for that reason; flash voices are plain by default.
 """
 import hashlib
 import json
@@ -15,12 +20,26 @@ CACHE_DIR = Path(os.environ.get("IELTS_SPEAK_TTS_CACHE", str(BASE_DIR / ".cache"
 
 MODEL = os.environ.get("IELTS_SPEAK_TTS_MODEL", "qwen3-tts-flash")
 
-# Official qwen3-tts-flash English voices (51 voices total; label shown in UI).
+# 语气指令仅 instruct-flash 支持;flash 无此参数,保留常量只作缓存 key 区分,
+# 未来若换回 instruct 模型时缓存自动失效。
+TONE_INSTRUCTIONS = os.environ.get(
+    "IELTS_SPEAK_TTS_INSTRUCTIONS",
+    "Speak in a calm, gentle, plain and unhurried tone. Avoid exaggerated emotions.",
+)
+
+# qwen3-tts-flash English voices (label shown in UI).
+# 实测 MaaS 业务空间:Ryan 合成音调错误(接近女声),男声用 Ethan(121Hz 正常男声)。
 VOICES: dict[str, str] = {
     "Jennifer": "Jennifer · 女声 美语",
-    "Ryan": "Ryan · 男声 美语",
+    "Ethan": "Ethan · 男声 美语",
 }
+# 旧选择兼容:Ryan 的音频缓存与新选择自动切到 Ethan
+VOICE_ALIASES: dict[str, str] = {"Ryan": "Ethan"}
 DEFAULT_VOICE = "Jennifer"
+
+
+def _resolve_voice(voice: str) -> str:
+    return VOICE_ALIASES.get(voice, voice)
 MAX_TEXT_LEN = 500
 DEFAULT_RATE = 1.0
 MIN_RATE = 0.5
@@ -55,12 +74,14 @@ def _load_api_key() -> str:
 
 
 def _cache_path(voice: str, rate: float, text: str) -> Path:
-    digest = hashlib.sha256(f"{voice}:{rate}:{text}".encode("utf-8")).hexdigest()[:24]
+    voice = _resolve_voice(voice)
+    digest = hashlib.sha256(f"{MODEL}:{TONE_INSTRUCTIONS}:{voice}:{rate}:{text}".encode("utf-8")).hexdigest()[:24]
     return CACHE_DIR / f"{digest}.wav"
 
 
 def _synth_remote(voice: str, text: str, rate: float) -> bytes:
     """Synthesize via qwen3-tts-flash HTTP endpoint; never caches."""
+    voice = _resolve_voice(voice)
     body = json.dumps(
         {
             "model": MODEL,
@@ -112,7 +133,7 @@ def synthesize(voice: str, text: str, rate: float = DEFAULT_RATE) -> bytes:
 
 def validate(voice: str, text: str, rate: float = DEFAULT_RATE) -> str | None:
     """Return a Chinese error message, or None when valid."""
-    if voice not in VOICES:
+    if _resolve_voice(voice) not in VOICES:
         return "未知发音人。"
     if not MIN_RATE <= rate <= MAX_RATE:
         return f"语速需在 {MIN_RATE}–{MAX_RATE} 之间。"

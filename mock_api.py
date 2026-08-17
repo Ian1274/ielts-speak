@@ -160,7 +160,7 @@ def create_mock_router(payload: dict) -> APIRouter:
         # 系统边界验证:不信任外部数据
         if body.section not in payload.get("sections", {}):
             raise HTTPException(status_code=422, detail="题库数据缺失,请刷新页面重试。")
-        if body.voice not in tts.VOICES:
+        if body.voice not in tts.VOICES and body.voice not in tts.VOICE_ALIASES:
             raise HTTPException(status_code=422, detail="未知发音人。")
 
         conn = connect()
