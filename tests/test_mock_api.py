@@ -5,7 +5,7 @@ import db
 from tests import helpers
 
 SECTION = "大陆新题"
-VOICE = "Ryan"
+VOICE = "Ethan"
 
 
 def create_session(client, headers, section=SECTION, voice=VOICE):
@@ -37,7 +37,7 @@ def test_mock_session_packet_shape(client):
     packet = body["packet"]
     # P1 第一主题:固定首问 + 备选抽 2
     assert len(packet["p1First"]["questions"]) == 3
-    assert packet["p1First"]["topic"] in ("工作/学习", "家乡/住处")
+    assert packet["p1First"]["topic"] in ("Work or studies", "Hometown")
     # 第二、三主题:2 个不同主题 × 每主题 2–3 问
     assert len(packet["p1Topics"]) == 2
     assert packet["p1Topics"][0]["topic"] != packet["p1Topics"][1]["topic"]

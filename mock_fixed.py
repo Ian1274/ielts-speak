@@ -6,7 +6,7 @@ are spoken verbatim by TTS; Chinese comments are annotations only.
 Placeholders resolved at packet build time (mock_api.py):
   {greeting}  → "Good morning" / "Good afternoon" by server hour
   {n}         → user's completed mock count + 1
-  {topic}     → P2 topic name (Chinese; qwen3-tts reads mixed text fine)
+  {topic}     → P2 topic name (English)
 """
 import datetime
 
@@ -19,9 +19,9 @@ OPENING = "{greeting}. My name is {examiner}. This is your {n}th mock speaking t
 
 ID_CHECK = "Can I see your identification, please?"
 
-# P1 第一主题 A · 工作/学习:固定首问 + 备选 3 抽 2
+# P1 第一主题 A · Work or studies:固定首问 + 备选 3 抽 2
 P1_TOPIC_A = {
-    "topic": "工作/学习",
+    "topic": "Work or studies",
     "lead": "Do you work or are you a student?",
     "backup": (
         "Why did you choose that job or course?",
@@ -30,9 +30,9 @@ P1_TOPIC_A = {
     ),
 }
 
-# P1 第一主题 B · 家乡/住处:固定首问 + 备选 3 抽 2
+# P1 第一主题 B · Hometown:固定首问 + 备选 3 抽 2
 P1_TOPIC_B = {
-    "topic": "家乡/住处",
+    "topic": "Hometown",
     "lead": "Let's talk about your hometown. Where is it?",
     "backup": (
         "What do you like most about it?",
