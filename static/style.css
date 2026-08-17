@@ -1,29 +1,32 @@
 /* ── tokens ─────────────────────────────────────────────── */
 :root {
-  /* 黄昏考场：墨绿墙面 + 暖纸题卡 + 黄铜指针 */
-  --bg: #14231f;
-  --surface: #1b2d28;
-  --surface-2: #263b35;
-  --line: #33504a;
-  --text: #ece8db;
-  --muted: #93a49c;
-  --accent: #e0a03c;
-  --accent-bright: #eeb15a;
-  --accent-soft: rgba(224, 160, 60, 0.14);
-  --accent-text: #ffc96b;
+  /* 阳光橙 × 天空蓝 · 奶油亮色(乐观活泼) */
+  --bg: #fff9f0;
+  --surface: #ffffff;
+  --surface-2: #fff1dc;
+  --line: #f2ddc2;
+  --text: #2d2a26;
+  --muted: #8a7d6b;
+  --accent: #ff8c42;
+  --accent-bright: #ffa25e;
+  --accent-soft: rgba(255, 140, 66, 0.1);
+  --accent-text: #d96f26;
+  --on-accent: #ffffff;
+  --accent2: #4a9bff;
+  --accent2-soft: rgba(74, 155, 255, 0.12);
   --urgent: #e0554a;
-  --paper: #f2ead7;
+  --paper: #fffdf8;
   --ink: #2b2922;
-  --paper-muted: #83765e;
+  --paper-muted: #b09b7f;
 
   --font-display: "Songti SC", "STSong", "SimSun", serif;
   --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
   --font-serif: Georgia, "Times New Roman", "Songti SC", "SimSun", serif;
 
-  --radius: 12px;
-  --shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.55);
-  --shadow-card: 0 18px 44px -18px rgba(0, 0, 0, 0.6);
+  --radius: 16px;
+  --shadow: 0 22px 52px -26px rgba(217, 111, 38, 0.3);
+  --shadow-card: 0 14px 34px -16px rgba(217, 111, 38, 0.32);
 }
 
 /* ── base ───────────────────────────────────────────────── */
@@ -33,7 +36,8 @@ html, body { margin: 0; padding: 0; }
 
 body {
   background:
-    radial-gradient(1200px 500px at 50% -10%, rgba(224, 160, 60, 0.07), transparent 60%),
+    radial-gradient(760px 320px at 88% -8%, rgba(74, 155, 255, 0.14), transparent 62%),
+    radial-gradient(640px 300px at -6% 26%, rgba(255, 140, 66, 0.12), transparent 62%),
     var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
@@ -158,7 +162,7 @@ select:focus-visible {
 
 .tab.is-active {
   background: var(--accent);
-  color: #241a05;
+  color: var(--on-accent);
 }
 
 /* ── panels ─────────────────────────────────────────────── */
@@ -258,7 +262,7 @@ select:focus-visible {
 
 .btn:active { transform: scale(0.98); }
 
-.btn--primary { background: var(--accent); color: #241a05; }
+.btn--primary { background: var(--accent); color: var(--on-accent); }
 .btn--primary:hover { background: var(--accent-bright); }
 
 .btn--block { width: 100%; padding: 15px; font-size: 17px; letter-spacing: 0.1em; margin-top: 6px; }
@@ -445,7 +449,7 @@ select:focus-visible {
 /* 登录/管理表单输入框 */
 .input {
   background: var(--surface);
-  color: var(--paper);
+  color: var(--text);
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 0.55rem 0.8rem;
@@ -479,21 +483,21 @@ select:focus-visible {
 .acct__trigger:hover { background: var(--surface-2); }
 .acct__trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* 圆章:黄铜底 + 内圈压痕,首字母如铸印 */
+/* 圆章:阳光橙底 + 白首字母 */
 .acct__avatar {
   width: 2.1rem;
   height: 2.1rem;
   border-radius: 50%;
   background: radial-gradient(circle at 32% 28%, var(--accent-bright), var(--accent) 68%);
-  color: #241a05;
+  color: var(--on-accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 1.05rem;
-  border: 1px solid rgba(0, 0, 0, 0.3);
-  box-shadow: inset 0 0 0 1.5px rgba(36, 26, 5, 0.35), 0 2px 6px -2px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(217, 111, 38, 0.4);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.28), 0 2px 6px -2px rgba(217, 111, 38, 0.5);
 }
 .acct__name { color: var(--text); font-size: 0.9rem; }
 .acct__caret {
@@ -526,7 +530,7 @@ select:focus-visible {
   text-align: left;
   padding: 0.6rem 0.9rem;
   font-size: 0.9rem;
-  color: var(--paper);
+  color: var(--text);
   text-decoration: none;
 }
 .acct__menu a + a,
