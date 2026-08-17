@@ -93,17 +93,18 @@ systemctl enable --now ielts-speak
 ## 项目结构
 
 ```
-main.py          FastAPI 应用 (API + 静态托管)
-parser.py        题库 md → JSON (question_bank/ 多文件)
-tts.py           qwen3-tts-flash 合成 + 磁盘缓存
-db.py            SQLite 连接与建表 (用户/会话/抽题历史/模拟场次)
-auth.py          密码哈希 (PBKDF2-SHA256)、会话、管理员注入
-users_api.py     登录/登出/当前用户 (无注册接口)
-session_api.py   抽题会话 (避重加权 + 历史记录)
-admin_api.py     管理员用户管理端点
-mock_fixed.py    全真模拟考官台词 (固定流程数据)
-mock_api.py      全真模拟场次接口 (抽题包 + 结束上报)
-sampling.py      纯抽样逻辑 (衰减权重)
+main.py          FastAPI 入口 (uvicorn main:app;API 组装 + 静态托管)
+ielts/           核心包
+  db.py          SQLite 连接与建表 (用户/会话/抽题历史/模拟场次)
+  auth.py        密码哈希 (PBKDF2-SHA256)、会话、管理员注入
+  users_api.py   登录/登出/当前用户 (无注册接口)
+  session_api.py 抽题会话 (避重加权 + 历史记录)
+  admin_api.py   管理员用户管理端点
+  mock_fixed.py  全真模拟考官台词 (固定流程数据)
+  mock_api.py    全真模拟场次接口 (抽题包 + 结束上报)
+  sampling.py    纯抽样逻辑 (衰减权重)
+  parser.py      题库 md → JSON (question_bank/ 多文件)
+  tts.py         qwen3-tts-flash 合成 + 磁盘缓存
 static/          前端 (HTML/CSS/JS,无框架;mock.* = 全真模拟)
 tests/           pytest (66 个用例)
 question_bank/   题库 (2026 5–8 月): mainland|non-mainland × new|old × p1|p2p3 (P3 随 P2 主题存放)
