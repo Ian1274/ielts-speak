@@ -105,7 +105,7 @@ function waitAction(key) {
 }
 
 function resolveAction(key) {
-  if (s.pending && s.pending.key === key) {
+  if (s.pending && s.pending.key.split("|").includes(key)) {
     const { resolve } = s.pending;
     s.pending = null;
     resolve(key);
@@ -207,7 +207,7 @@ async function beginP1() {
     done += 1;
     els.progressLabel.textContent = `第 ${done} / ${s.p1Total} 问`;
     const act = await askQuestion(item);
-    if (act !== "next") return;
+    if (act === "stop") return; // next/skip 都继续循环
   }
   s.durations["P1"] = (performance.now() - s.stageStart) / 1000;
   await beginP2();
@@ -242,6 +242,7 @@ async function beginP2() {
   els.subtitle.textContent = s.scripts.p2Transition;
   s.lastSpoken = s.scripts.p2Transition;
   setActions({});
+  els.hint.textContent = "考官正在说明 Part 2 要求…";
   await speak(s.scripts.p2Transition);
   if (s.state !== "p2prep") return;
   els.hint.textContent = "1 分钟准备,可做笔记";
@@ -287,6 +288,7 @@ async function beginP3() {
   els.subtitle.textContent = s.scripts.p3Transition;
   s.lastSpoken = s.scripts.p3Transition;
   setActions({});
+  els.hint.textContent = "考官正在过渡到 Part 3…";
   await speak(s.scripts.p3Transition);
   if (s.state !== "p3") return;
   els.hint.textContent = "……";
@@ -299,7 +301,7 @@ async function beginP3() {
     done += 1;
     els.progressLabel.textContent = `第 ${done} / ${total} 问`;
     const act = await askQuestion(item);
-    if (act !== "next") return;
+    if (act === "stop") return; // next/skip 都继续循环
   }
   s.durations["P3"] = (performance.now() - s.stageStart) / 1000;
   await beginClose();
