@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from admin_api import router as admin_router
 from auth import ensure_admin, require_user
 from db import connect, init_db
+from mock_api import create_mock_router
 from session_api import create_session_router
 from users_api import COOKIE_NAME, router as users_router
 from parser import ParserError, build_payload, parse_question_bank
@@ -42,6 +43,7 @@ def create_app() -> FastAPI:
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     app.include_router(users_router)
     app.include_router(create_session_router(payload))
+    app.include_router(create_mock_router(payload))
     app.include_router(admin_router)
 
     @app.get("/health")

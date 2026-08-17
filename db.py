@@ -24,6 +24,18 @@ CREATE TABLE IF NOT EXISTS sessions (
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     expires_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS mock_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    section TEXT NOT NULL,
+    voice TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'created',
+    started_at TEXT NOT NULL DEFAULT (datetime('now')),
+    completed_at TEXT,
+    durations_json TEXT,
+    drawn_json TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_mock_sessions_user ON mock_sessions(user_id);
 CREATE TABLE IF NOT EXISTS history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -31,10 +43,30 @@ CREATE TABLE IF NOT EXISTS history (
     part TEXT NOT NULL,
     topic TEXT NOT NULL,
     item_key TEXT NOT NULL,
-    drawn_at TEXT NOT NULL DEFAULT (datetime('now'))
+    drawn_at TEXT NOT NULL DEFAULT (datetime('now')),
+    mode TEXT NOT NULL DEFAULT 'practice',
+    mock_session_id INTEGER NULL REFERENCES mock_sessions(id)
 );
 CREATE INDEX IF NOT EXISTS idx_history_user_time ON history(user_id, drawn_at);
 """
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Upgrade legacy DBs in place: add history columns introduced in v0.4.0.
+
+    CREATE TABLE IF NOT EXISTS does not add columns to existing tables, so
+    new columns are added with ALTER TABLE when missing (idempotent).
+    """
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(history)").fetchall()}
+    if "mode" not in cols:
+        conn.execute(
+            "ALTER TABLE history ADD COLUMN mode TEXT NOT NULL DEFAULT 'practice'"
+        )
+    if "mock_session_id" not in cols:
+        conn.execute("ALTER TABLE history ADD COLUMN mock_session_id INTEGER NULL")
+    mcols = {r["name"] for r in conn.execute("PRAGMA table_info(mock_sessions)").fetchall()}
+    if mcols and "drawn_json" not in mcols:
+        conn.execute("ALTER TABLE mock_sessions ADD COLUMN drawn_json TEXT")
 
 
 def get_db_path() -> Path:
@@ -52,6 +84,7 @@ def init_db() -> None:
     conn = connect()
     try:
         conn.executescript(SCHEMA)
+        _migrate(conn)
         conn.commit()
     finally:
         conn.close()

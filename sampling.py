@@ -33,6 +33,44 @@ def _sample_no_replacement(keys, weights, count, rng):
     return picked
 
 
+def sample_topics(payload, section, part, count, recent, rng):
+    """Pick `count` distinct topics, weighted by their summed question weights.
+
+    Returns a list of topic dicts (empty when the pool has no questions).
+    Used by the mock exam for P1 topics 2 and 3.
+    """
+    topic_infos = []
+    for t in payload["sections"][section][part]:
+        questions = [q for q in t["questions"] if q]
+        if not questions:
+            continue
+        keys = [item_key(section, part, t["topic"], q) for q in questions]
+        topic_infos.append((t, sum(_weights(keys, recent))))
+    if not topic_infos:
+        return []
+    topic_keys = [item_key(section, part, t["topic"], None) for t, _ in topic_infos]
+    weights = [w for _, w in topic_infos]
+    picked = _sample_no_replacement(topic_keys, weights, count, rng)
+    by_key = dict(zip(topic_keys, topic_infos))
+    return [by_key[k][0] for k in picked]
+
+
+def sample_questions_from_topic(topic, section, part, count, recent, rng):
+    """Sample `count` questions from one topic dict; returns (texts, keys).
+
+    No replacement, refilled from the full pool when the topic holds fewer
+    than `count` questions.
+    """
+    questions = [q for q in topic["questions"] if q]
+    keys = [item_key(section, part, topic["topic"], q) for q in questions]
+    weights = _weights(keys, recent)
+    picked = _sample_no_replacement(keys, weights, count, rng)
+    picked += [rng.choices(keys, weights=weights, k=1)[0]
+               for _ in range(count - len(picked))]
+    text_by_key = dict(zip(keys, questions))
+    return [text_by_key[k] for k in picked], picked
+
+
 def sample_session(payload, section, part, count, recent, rng):
     """Sample one session; returns (items, with_replacement, keys)."""
     topics = payload["sections"][section][part]
