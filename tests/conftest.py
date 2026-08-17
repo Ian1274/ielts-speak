@@ -20,7 +20,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("IELTS_DB", str(tmp_path / "fresh.db"))
     monkeypatch.setenv("IELTS_ADMIN_USER", "admin")
     monkeypatch.setenv("IELTS_ADMIN_PASSWORD", "secret123")
-    import db
+    from ielts import db
     from main import create_app
 
     db.init_db()

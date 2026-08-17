@@ -1,6 +1,6 @@
 from collections import Counter
 
-import db
+from ielts import db
 
 from tests import helpers
 

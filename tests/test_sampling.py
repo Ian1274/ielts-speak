@@ -1,7 +1,7 @@
 import random
 from collections import Counter
 
-import sampling
+from ielts import sampling
 
 PAYLOAD = {
     "sections": {

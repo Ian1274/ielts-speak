@@ -15,7 +15,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
+# 包位于 ielts/ 下,项目根在父目录:.env / .cache 留在仓库根
+BASE_DIR = Path(__file__).resolve().parent.parent
 CACHE_DIR = Path(os.environ.get("IELTS_SPEAK_TTS_CACHE", str(BASE_DIR / ".cache" / "tts")))
 
 MODEL = os.environ.get("IELTS_SPEAK_TTS_MODEL", "qwen3-tts-flash")

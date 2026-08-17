@@ -10,15 +10,16 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from admin_api import router as admin_router
-from auth import ensure_admin, require_user
-from db import connect, init_db
-from mock_api import create_mock_router
-from session_api import create_session_router
-from users_api import COOKIE_NAME, router as users_router
-from parser import ParserError, build_payload, parse_question_bank
-import tts
+from ielts.admin_api import router as admin_router
+from ielts.auth import ensure_admin, require_user
+from ielts.db import connect, init_db
+from ielts.mock_api import create_mock_router
+from ielts.session_api import create_session_router
+from ielts.users_api import COOKIE_NAME, router as users_router
+from ielts.parser import ParserError, build_payload, parse_question_bank
+from ielts import tts
 
+# 入口留在根目录:BASE_DIR 即项目根,question_bank/ 与 static/ 在此
 BASE_DIR = Path(__file__).resolve().parent
 BANK_DIR = Path(
     os.environ.get("IELTS_SPEAK_DATA", str(BASE_DIR / "question_bank"))

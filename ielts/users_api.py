@@ -4,8 +4,8 @@ import re
 from fastapi import APIRouter, Cookie, HTTPException, Response
 from pydantic import BaseModel
 
-from auth import create_session, delete_session, get_current_user, verify_password
-from db import connect
+from ielts.auth import create_session, delete_session, get_current_user, verify_password
+from ielts.db import connect
 
 router = APIRouter()
 

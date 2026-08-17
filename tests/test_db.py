@@ -2,7 +2,7 @@ import sqlite3
 
 import pytest
 
-import db
+from ielts import db
 
 
 def test_init_db_creates_tables():

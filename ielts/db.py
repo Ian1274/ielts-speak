@@ -7,7 +7,8 @@ import os
 import sqlite3
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
+# 包位于 ielts/ 下,项目根在父目录:ielts.db 留在仓库根
+BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_DB = BASE_DIR / "ielts.db"
 
 SCHEMA = """

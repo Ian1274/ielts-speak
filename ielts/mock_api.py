@@ -13,12 +13,12 @@ from collections import Counter
 from fastapi import APIRouter, Cookie, HTTPException
 from pydantic import BaseModel
 
-import mock_fixed
-import tts
-from auth import require_user
-from db import connect
-from sampling import item_key, sample_questions_from_topic, sample_session, sample_topics
-from users_api import COOKIE_NAME
+from ielts import mock_fixed
+from ielts import tts
+from ielts.auth import require_user
+from ielts.db import connect
+from ielts.sampling import item_key, sample_questions_from_topic, sample_session, sample_topics
+from ielts.users_api import COOKIE_NAME
 
 FIRST_TOPICS = (mock_fixed.P1_TOPIC_A, mock_fixed.P1_TOPIC_B)
 P1_TOPIC_COUNT = 2

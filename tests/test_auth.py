@@ -1,6 +1,6 @@
 import pytest
 
-import db
+from ielts import db
 
 
 @pytest.fixture(autouse=True)
@@ -11,7 +11,7 @@ def fresh_db(tmp_path, monkeypatch):
 
 
 def _make_user(username="alice", role="user", password="secret123"):
-    import auth
+    from ielts import auth
     conn = db.connect()
     try:
         cur = conn.execute(
@@ -25,7 +25,7 @@ def _make_user(username="alice", role="user", password="secret123"):
 
 
 def test_hash_verify_roundtrip():
-    import auth
+    from ielts import auth
     stored = auth.hash_password("secret123")
     assert stored.startswith("pbkdf2$")
     assert auth.verify_password("secret123", stored) is True
@@ -33,18 +33,18 @@ def test_hash_verify_roundtrip():
 
 
 def test_verify_malformed_storage_returns_false():
-    import auth
+    from ielts import auth
     assert auth.verify_password("x", "not-a-hash") is False
     assert auth.verify_password("x", "pbkdf2$zz$zz") is False
 
 
 def test_hash_is_salted():
-    import auth
+    from ielts import auth
     assert auth.hash_password("same") != auth.hash_password("same")
 
 
 def test_session_roundtrip():
-    import auth
+    from ielts import auth
     uid = _make_user()
     conn = db.connect()
     try:
@@ -60,7 +60,7 @@ def test_session_roundtrip():
 
 
 def test_expired_session_rejected():
-    import auth
+    from ielts import auth
     uid = _make_user()
     conn = db.connect()
     try:
@@ -78,7 +78,7 @@ def test_expired_session_rejected():
 
 
 def test_require_admin_forbids_user_role():
-    import auth
+    from ielts import auth
     uid = _make_user()
     conn = db.connect()
     try:
@@ -93,7 +93,7 @@ def test_require_admin_forbids_user_role():
 
 
 def test_require_user_rejects_missing_token():
-    import auth
+    from ielts import auth
     conn = db.connect()
     try:
         try:
@@ -106,7 +106,7 @@ def test_require_user_rejects_missing_token():
 
 
 def test_ensure_admin_creates_from_env(monkeypatch):
-    import auth
+    from ielts import auth
     monkeypatch.setenv("IELTS_ADMIN_USER", "root")
     monkeypatch.setenv("IELTS_ADMIN_PASSWORD", "rootpass1")
     conn = db.connect()
@@ -121,7 +121,7 @@ def test_ensure_admin_creates_from_env(monkeypatch):
 
 
 def test_ensure_admin_upserts_existing_user(monkeypatch):
-    import auth
+    from ielts import auth
     monkeypatch.setenv("IELTS_ADMIN_USER", "ian1274")
     monkeypatch.setenv("IELTS_ADMIN_PASSWORD", "newpass1")
     uid = _make_user(username="ian1274", role="user", password="oldpass1")
@@ -137,7 +137,7 @@ def test_ensure_admin_upserts_existing_user(monkeypatch):
 
 
 def test_ensure_admin_noop_without_env(monkeypatch):
-    import auth
+    from ielts import auth
     monkeypatch.delenv("IELTS_ADMIN_USER", raising=False)
     monkeypatch.delenv("IELTS_ADMIN_PASSWORD", raising=False)
     conn = db.connect()

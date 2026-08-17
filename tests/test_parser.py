@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from parser import (
+from ielts.parser import (
     ParserError,
     SECTION_SOURCES,
     FILE_LAYOUT,

@@ -8,10 +8,10 @@ from collections import Counter
 from fastapi import APIRouter, Cookie, HTTPException
 from pydantic import BaseModel
 
-from auth import require_user
-from db import connect
-from sampling import sample_session
-from users_api import COOKIE_NAME
+from ielts.auth import require_user
+from ielts.db import connect
+from ielts.sampling import sample_session
+from ielts.users_api import COOKIE_NAME
 
 PART_ORDER = ("P1", "P2", "P3")
 

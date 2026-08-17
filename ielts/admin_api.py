@@ -2,9 +2,9 @@
 from fastapi import APIRouter, Cookie, HTTPException
 from pydantic import BaseModel
 
-from auth import hash_password, require_admin
-from db import connect
-from users_api import COOKIE_NAME, MIN_PASSWORD_LEN, USERNAME_RE
+from ielts.auth import hash_password, require_admin
+from ielts.db import connect
+from ielts.users_api import COOKIE_NAME, MIN_PASSWORD_LEN, USERNAME_RE
 
 router = APIRouter()
 
