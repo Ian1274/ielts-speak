@@ -6,6 +6,7 @@
 2. 版本管理需要在RADEME.md中体现，基本信息包括但不限于日期、版本号、更新内容；
 
 ## 已完成
+- 2026-08-17 项目结构整理:根目录 10 个 py 收进 ielts/ 包,main.py 留根作入口;import 改 from ielts.*;db/tts BASE_DIR 指向项目根 (ielts.db/.env/.cache 位置不变);uvicorn main:app、systemd、部署路径均不用改
 - 2026-08-17 v0.4.0 升级完成:双模式导航 (练习模式 / 全真模拟)、全真模拟 1:1 还原机考 (考官台词/题卡/硬倒计时/时间汇总)、主题重设计为乐观活泼亮色;设计文档 docs/mock-exam-flow-design.md、固定题库 docs/mock-fixed-bank.md、实现计划 docs/mock-exam-impl-plan.md
 - 2026-08-15 题库拆分为 question_bank/ 目录 (地区×新旧×p1|p2p3 共 6 文件,P3 随 P2 主题存放),parser 同步改造,补 parser 测试
 
