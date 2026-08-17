@@ -91,6 +91,43 @@ select:focus-visible {
   font-size: 14px;
 }
 
+/* ── mode nav(练习模式 | 全真模拟)─────────────────────── */
+.mode-nav {
+  display: flex;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px;
+  margin-bottom: 20px;
+  width: fit-content;
+}
+
+.mode-nav__item {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 22px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.mode-nav__item:hover { color: var(--text); }
+
+.mode-nav__item.is-active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+@media (max-width: 480px) {
+  .mode-nav { width: 100%; }
+  .mode-nav__item { flex: 1; justify-content: center; padding: 10px 8px; }
+}
+
 /* ── tabs ───────────────────────────────────────────────── */
 .tabs {
   display: grid;

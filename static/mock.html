@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>雅思口语 · 全真模拟</title>
+  <meta name="description" content="1:1 还原机考视频通话口语：考官提问、P2 题卡上屏、硬倒计时，一口气走完 11–14 分钟。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23ff8c42'/%3E%3Ctext x='16' y='23' font-size='18' font-family='serif' font-weight='bold' text-anchor='middle' fill='white'%3E考%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="mock.css">
+</head>
+<body>
+  <div class="app">
+    <header class="masthead masthead--row">
+      <div>
+        <p class="masthead__kicker">IELTS SPEAKING · 全真模拟</p>
+        <h1 class="masthead__title">考场</h1>
+        <p class="masthead__note">像真考一样一口气走完：考官提问、P2 题卡、硬倒计时。</p>
+      </div>
+      <details class="acct" id="acctMenu">
+        <summary class="acct__trigger" aria-label="账号菜单">
+          <span class="acct__avatar" id="authAvatar" aria-hidden="true"></span>
+          <span class="acct__name" id="authUser" hidden></span>
+          <span class="acct__caret" aria-hidden="true"></span>
+        </summary>
+        <div class="acct__menu">
+          <a id="authAdminBtn" href="/admin.html" hidden>管理后台</a>
+          <button id="authLogoutBtn" hidden>退出登录</button>
+        </div>
+      </details>
+    </header>
+
+    <nav class="mode-nav" aria-label="模式">
+      <a class="mode-nav__item" href="/">练习模式</a>
+      <a class="mode-nav__item is-active" href="/mock.html">全真模拟</a>
+    </nav>
+
+    <main>
+      <!-- 配置界面 -->
+      <section class="panel config" id="viewConfig" aria-label="模拟设置">
+        <div class="config-grid">
+          <div class="field field--wide">
+            <span class="field__label" id="mockSectionLabel">题库</span>
+            <div class="chips" role="group" aria-labelledby="mockSectionLabel">
+              <button class="chip is-active" data-section="大陆新题">大陆新题</button>
+              <button class="chip" data-section="大陆老题">大陆老题</button>
+              <button class="chip" data-section="非大陆新题">非大陆新题</button>
+            </div>
+          </div>
+          <div class="field field--wide">
+            <span class="field__label" id="mockVoiceLabel">考官声音</span>
+            <div class="chips" role="group" aria-labelledby="mockVoiceLabel">
+              <button class="chip" data-voice="Ryan">男 · Ryan</button>
+              <button class="chip is-active" data-voice="Jennifer">女 · Jennifer</button>
+            </div>
+          </div>
+          <button class="btn btn--primary btn--block config__start" id="start">开始考试</button>
+        </div>
+        <p class="error" id="error" role="alert" hidden></p>
+      </section>
+
+      <!-- 考试界面 -->
+      <section class="mock" id="viewExam" hidden aria-label="考试进行中">
+        <div class="mock__stage">
+          <header class="mock__statusbar">
+            <span class="mock__part" id="partLabel">入场</span>
+            <span class="mock__meta" id="nthLabel"></span>
+            <span class="mock__meta" id="progressLabel" hidden></span>
+          </header>
+
+          <div class="mock__screen" id="mockScreen">
+            <!-- 考官:中央占位(后续接 AI 人) -->
+            <figure class="examiner" id="examiner">
+              <div class="examiner__window" aria-hidden="true"><span class="examiner__face">👤</span></div>
+              <figcaption class="examiner__name">Alex · 考官</figcaption>
+              <p class="examiner__line" id="subtitle" aria-live="polite"></p>
+            </figure>
+
+            <!-- 考生画面:右上角占位(后续接摄像头) -->
+            <div class="selfview" aria-hidden="true"><span class="selfview__face">🎥</span></div>
+
+            <!-- P2 题卡:过渡语时上屏 -->
+            <article class="cuecard" id="cuecard" hidden>
+              <p class="cuecard__topic" id="cuecardTopic"></p>
+              <div class="cuecard__body" id="cuecardBody"></div>
+            </article>
+
+            <!-- 硬倒计时大字(P2 准备/陈述) -->
+            <p class="mock__timer" id="timer" hidden aria-hidden="true">1:00</p>
+            <p class="mock__hint" id="hint" aria-live="polite"></p>
+          </div>
+
+          <footer class="mock__actions">
+            <button class="btn btn--primary" id="btnId">出示身份证</button>
+            <button class="btn btn--primary" id="btnNext" hidden>继续</button>
+            <button class="btn btn--ghost" id="btnSkip" hidden>跳过</button>
+            <button class="btn btn--ghost" id="btnRepeat" hidden>重复</button>
+            <button class="btn btn--danger" id="btnQuit">退出</button>
+          </footer>
+        </div>
+      </section>
+
+      <!-- 时间汇总 -->
+      <section class="panel summary" id="viewSummary" hidden aria-label="考试结束">
+        <h2 class="summary__title">考试结束</h2>
+        <table class="summary__table" id="summaryTable"></table>
+        <button class="btn btn--primary btn--block config__start" id="backHome">返回首页</button>
+      </section>
+    </main>
+
+    <footer class="foot">全真模拟 · 11–14 分钟 · 不暂停不打断</footer>
+  </div>
+
+  <script type="module" src="mock.js"></script>
+</body>
+</html>

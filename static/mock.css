@@ -1,0 +1,235 @@
+/* ── 全真模拟 · 考试界面 ───────────────────────────────────
+   颜色全部引用 style.css 的 var() 令牌,主题重设计只需改令牌。 */
+
+.mock__stage {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mock__statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  flex-wrap: wrap;
+}
+
+.mock__part {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  color: var(--accent-text);
+}
+
+.mock__meta {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+/* ── 屏幕区:考官中央 + 考生右上占位 ────────────────────── */
+.mock__screen {
+  position: relative;
+  min-height: 380px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 28px 20px 40px;
+  overflow: hidden;
+}
+
+.examiner {
+  text-align: center;
+  max-width: 520px;
+  width: 100%;
+  z-index: 1;
+}
+
+.examiner__window {
+  width: min(300px, 70vw);
+  aspect-ratio: 16 / 10;
+  margin: 0 auto;
+  border-radius: 14px;
+  background: radial-gradient(circle at 50% 30%, #24332e, #0e1714 75%);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-card), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  display: grid;
+  place-items: center;
+  font-size: 52px;
+}
+
+.examiner__name {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+
+/* 考官字幕:气泡显示当前台词 */
+.examiner__line {
+  margin: 14px auto 0;
+  max-width: 460px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--accent-soft);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+/* 考生画面占位:右上角,后续接摄像头 */
+.selfview {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 132px;
+  aspect-ratio: 16 / 10;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  box-shadow: var(--shadow-card);
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  opacity: 0.92;
+  z-index: 2;
+}
+
+/* ── P2 题卡:过渡语时上屏,考官缩小居左 ─────────────────── */
+.mock__screen.is-cue {
+  grid-template-columns: minmax(180px, 5fr) minmax(240px, 7fr);
+  gap: 20px;
+  align-items: center;
+}
+
+.mock__screen.is-cue .examiner__window {
+  width: min(220px, 40vw);
+  font-size: 40px;
+}
+
+.mock__screen.is-cue .examiner__line { font-size: 13px; max-width: 300px; }
+
+.cuecard {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: var(--shadow-card);
+  text-align: left;
+  max-height: 300px;
+  overflow: auto;
+}
+
+.cuecard__topic {
+  margin: 0 0 10px;
+  font-weight: 700;
+  font-size: 16px;
+  border-bottom: 1px solid rgba(43, 41, 34, 0.18);
+  padding-bottom: 8px;
+}
+
+.cuecard__body { font-family: var(--font-serif); font-size: 15px; line-height: 1.5; }
+.cuecard__body p { margin: 0 0 6px; }
+.cuecard__body p:last-child { margin-bottom: 0; }
+
+/* ── 硬倒计时大字(P2 准备 / 陈述) ───────────────────────── */
+.mock__timer {
+  position: absolute;
+  bottom: 14px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: clamp(44px, 9vw, 64px);
+  font-weight: 700;
+  color: var(--accent-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.mock__hint {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  z-index: 2;
+}
+
+/* 倒计时显示时提示上移,避免叠字 */
+.mock__screen:has(.mock__timer:not([hidden])) .mock__hint { bottom: 84px; }
+
+/* ── 操作条 ─────────────────────────────────────────────── */
+.mock__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.mock__actions .btn { min-width: 110px; }
+
+/* ── 时间汇总 ───────────────────────────────────────────── */
+.summary__title {
+  margin: 0 0 16px;
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.summary__table {
+  width: min(420px, 100%);
+  margin: 0 auto 20px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.summary__table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.summary__table td:first-child { color: var(--muted); }
+.summary__table td:last-child {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 移动端 ─────────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .mock__screen { min-height: 320px; padding: 20px 12px 44px; }
+  .mock__screen.is-cue { grid-template-columns: 1fr; }
+  .mock__screen.is-cue .examiner__window { width: min(150px, 46vw); }
+  .mock__screen.is-cue .examiner__line { display: none; }
+  .selfview { width: 92px; font-size: 22px; }
+  .examiner__window { width: min(210px, 68vw); font-size: 40px; }
+  .examiner__line { font-size: 13px; }
+
+  .mock__actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    flex-wrap: nowrap;
+    margin: 0 -14px -40px;
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+  }
+  .mock__actions .btn { flex: 1; min-height: 46px; min-width: 0; padding: 12px 6px; font-size: 14px; }
+}
