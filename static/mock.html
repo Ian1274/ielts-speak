@@ -50,7 +50,7 @@
           <div class="field field--wide">
             <span class="field__label" id="mockVoiceLabel">考官声音</span>
             <div class="chips" role="group" aria-labelledby="mockVoiceLabel">
-              <button class="chip" data-voice="Ryan">男 · Ryan</button>
+              <button class="chip" data-voice="Ethan">男 · Ethan</button>
               <button class="chip is-active" data-voice="Jennifer">女 · Jennifer</button>
             </div>
           </div>
@@ -64,28 +64,28 @@
         <div class="mock__stage">
           <header class="mock__statusbar">
             <span class="mock__part" id="partLabel">入场</span>
-            <span class="mock__meta" id="nthLabel"></span>
-            <span class="mock__meta" id="progressLabel" hidden></span>
           </header>
 
           <div class="mock__screen" id="mockScreen">
-            <!-- 考官:中央占位(后续接 AI 人) -->
-            <figure class="examiner" id="examiner">
-              <div class="examiner__window" aria-hidden="true"><span class="examiner__face">👤</span></div>
-              <figcaption class="examiner__name">Alex · 考官</figcaption>
-              <p class="examiner__line" id="subtitle" aria-live="polite"></p>
-            </figure>
+            <!-- 主内容区:考官/考生/题卡,flex 占满,倒计时与提示独立成行不遮挡 -->
+            <div class="mock__screen__main">
+              <!-- 考官:中央占位(后续接 AI 人);不显示字幕,只听语音 -->
+              <figure class="examiner" id="examiner">
+                <div class="examiner__window" aria-hidden="true"><span class="examiner__face">👤</span></div>
+                <figcaption class="examiner__name">Alex · 考官</figcaption>
+              </figure>
 
-            <!-- 考生画面:右上角占位(后续接摄像头) -->
-            <div class="selfview" aria-hidden="true"><span class="selfview__face">🎥</span></div>
+              <!-- 考生画面:右上角占位(后续接摄像头) -->
+              <div class="selfview" aria-hidden="true"><span class="selfview__face">🎥</span></div>
 
-            <!-- P2 题卡:过渡语时上屏 -->
-            <article class="cuecard" id="cuecard" hidden>
-              <p class="cuecard__topic" id="cuecardTopic"></p>
-              <div class="cuecard__body" id="cuecardBody"></div>
-            </article>
+              <!-- P2 题卡:过渡语时上屏,只显正文,不显主题 -->
+              <article class="cuecard" id="cuecard" hidden>
+                <p class="cuecard__meta">PART 2 · CANDIDATE CARD</p>
+                <div class="cuecard__body" id="cuecardBody"></div>
+              </article>
+            </div>
 
-            <!-- 硬倒计时大字(P2 准备/陈述) -->
+            <!-- 硬倒计时大字(P2 准备):独立占位行,不覆盖内容 -->
             <p class="mock__timer" id="timer" hidden aria-hidden="true">1:00</p>
             <p class="mock__hint" id="hint" aria-live="polite"></p>
           </div>
@@ -108,7 +108,20 @@
       </section>
     </main>
 
-    <footer class="foot">全真模拟 · 11–14 分钟 · 不暂停不打断</footer>
+    <!-- 退出确认:页面内弹层,不用浏览器 confirm -->
+    <div class="modal" id="quitModal" hidden aria-hidden="true">
+      <div class="modal__backdrop" data-quit-close></div>
+      <div class="modal__box" role="alertdialog" aria-labelledby="quitTitle" aria-describedby="quitDesc">
+        <h2 class="modal__title" id="quitTitle">退出考试?</h2>
+        <p class="modal__desc" id="quitDesc">退出 = 放弃本场考试,已答题目不记录。</p>
+        <div class="modal__actions">
+          <button class="btn btn--ghost" id="quitCancel" data-quit-close>继续考试</button>
+          <button class="btn btn--danger" id="quitConfirm">确认退出</button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="foot">全真模拟 · 不暂停不打断</footer>
   </div>
 
   <script type="module" src="mock.js"></script>

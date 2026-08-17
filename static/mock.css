@@ -32,17 +32,38 @@
   font-family: var(--font-mono);
 }
 
-/* ── 屏幕区:考官中央 + 考生右上占位 ────────────────────── */
+/* ── 屏幕区:考官中央 + 考生右上占位 ──────────────────────
+   背景做考场氛围:顶部暖光 + 底部浅色桌面线,呼应视频通话房间。 */
 .mock__screen {
   position: relative;
   min-height: 380px;
-  display: grid;
-  place-items: center;
-  background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background:
+    radial-gradient(420px 240px at 50% -12%, rgba(255, 140, 66, 0.1), transparent 68%),
+    linear-gradient(var(--surface-2), #fff6e6);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 28px 20px 40px;
+  padding: 24px 20px 16px;
   overflow: hidden;
+}
+
+/* 主内容区:考官/题卡占满弹性空间,倒计时与提示独立成行,永不遮挡 */
+.mock__screen__main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+
+.mock__screen::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 44px;
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.55));
+  pointer-events: none;
 }
 
 .examiner {
@@ -52,19 +73,23 @@
   z-index: 1;
 }
 
+/* 考官窗 = 视频通话窗口:深色镜头 + 内环 + 底部一体名牌 */
 .examiner__window {
   width: min(300px, 70vw);
   aspect-ratio: 16 / 10;
   margin: 0 auto;
   border-radius: 14px;
-  background: radial-gradient(circle at 50% 30%, #24332e, #0e1714 75%);
-  border: 1px solid var(--line);
+  background:
+    radial-gradient(240px 130px at 50% 24%, rgba(255, 255, 255, 0.05), transparent 70%),
+    radial-gradient(circle at 50% 30%, #24332e, #0e1714 75%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow: var(--shadow-card), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   display: grid;
   place-items: center;
   font-size: 52px;
 }
 
+/* LIVE 点:视频通话在录制的考场隐喻;reduced-motion 下由全局规则静止 */
 .examiner__name {
   margin: 10px 0 0;
   font-size: 13px;
@@ -72,17 +97,22 @@
   letter-spacing: 0.1em;
 }
 
-/* 考官字幕:气泡显示当前台词 */
-.examiner__line {
-  margin: 14px auto 0;
-  max-width: 460px;
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--text);
-  background: var(--accent-soft);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 10px 14px;
+.examiner__name::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--urgent);
+  margin-right: 7px;
+  vertical-align: 1px;
+  box-shadow: 0 0 0 3px rgba(224, 85, 74, 0.16);
+  animation: live-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
 }
 
 /* 考生画面占位:右上角,后续接摄像头 */
@@ -103,8 +133,11 @@
   z-index: 2;
 }
 
+/* P2 题卡上屏时隐藏考生画面,避免遮挡题卡文字 */
+.mock__screen.is-cue .selfview { display: none; }
+
 /* ── P2 题卡:过渡语时上屏,考官缩小居左 ─────────────────── */
-.mock__screen.is-cue {
+.mock__screen.is-cue .mock__screen__main {
   grid-template-columns: minmax(180px, 5fr) minmax(240px, 7fr);
   gap: 20px;
   align-items: center;
@@ -115,24 +148,25 @@
   font-size: 40px;
 }
 
-.mock__screen.is-cue .examiner__line { font-size: 13px; max-width: 300px; }
-
 .cuecard {
   background: var(--paper);
   color: var(--ink);
   border-radius: 10px;
-  padding: 18px 20px;
+  padding: 14px 20px 18px;
   box-shadow: var(--shadow-card);
   text-align: left;
   max-height: 300px;
   overflow: auto;
 }
 
-.cuecard__topic {
+/* 题卡眉条:手写卡片的识别元素,答题纸质感 */
+.cuecard__meta {
   margin: 0 0 10px;
-  font-weight: 700;
-  font-size: 16px;
-  border-bottom: 1px solid rgba(43, 41, 34, 0.18);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--paper-muted);
+  border-bottom: 1px solid rgba(43, 41, 34, 0.14);
   padding-bottom: 8px;
 }
 
@@ -140,39 +174,31 @@
 .cuecard__body p { margin: 0 0 6px; }
 .cuecard__body p:last-child { margin-bottom: 0; }
 
-/* ── 硬倒计时大字(P2 准备 / 陈述) ───────────────────────── */
+/* ── 硬倒计时大字(P2 准备):占位行,不覆盖内容 ───────────── */
 .mock__timer {
-  position: absolute;
-  bottom: 14px;
-  left: 0;
-  right: 0;
+  order: 2;
   margin: 0;
   text-align: center;
   font-family: var(--font-mono);
-  font-size: clamp(44px, 9vw, 64px);
+  font-size: clamp(38px, 7vw, 54px);
   font-weight: 700;
+  line-height: 1.15;
   color: var(--accent-text);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.06em;
   text-shadow: 0 4px 18px rgba(217, 111, 38, 0.4);
-  z-index: 3;
   pointer-events: none;
 }
 
 .mock__hint {
-  position: absolute;
-  bottom: 10px;
-  left: 0;
-  right: 0;
+  order: 3;
   margin: 0;
+  min-height: 1.4em;
   text-align: center;
   font-size: 13px;
+  line-height: 1.4;
   color: var(--muted);
-  z-index: 2;
 }
-
-/* 倒计时显示时提示上移,避免叠字 */
-.mock__screen:has(.mock__timer:not([hidden])) .mock__hint { bottom: 84px; }
 
 /* ── 操作条 ─────────────────────────────────────────────── */
 .mock__actions {
@@ -213,13 +239,11 @@
 
 /* ── 移动端 ─────────────────────────────────────────────── */
 @media (max-width: 560px) {
-  .mock__screen { min-height: 320px; padding: 20px 12px 44px; }
-  .mock__screen.is-cue { grid-template-columns: 1fr; }
+  .mock__screen { min-height: 320px; padding: 20px 12px 16px; }
+  .mock__screen.is-cue .mock__screen__main { grid-template-columns: 1fr; gap: 14px; }
   .mock__screen.is-cue .examiner__window { width: min(150px, 46vw); }
-  .mock__screen.is-cue .examiner__line { display: none; }
   .selfview { width: 92px; font-size: 22px; }
   .examiner__window { width: min(210px, 68vw); font-size: 40px; }
-  .examiner__line { font-size: 13px; }
 
   .mock__actions {
     position: sticky;
@@ -233,3 +257,53 @@
   }
   .mock__actions .btn { flex: 1; min-height: 46px; min-width: 0; padding: 12px 6px; font-size: 14px; }
 }
+
+/* ── 退出确认弹层:页面内确认,不用浏览器 confirm ─────────── */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 20;
+}
+
+.modal[hidden] { display: none; }
+
+.modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(23, 26, 22, 0.45);
+}
+
+.modal__box {
+  position: relative;
+  width: min(340px, 100%);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 14px;
+  padding: 22px 20px 18px;
+  box-shadow: var(--shadow-card), 0 12px 40px rgba(23, 26, 22, 0.28);
+  text-align: center;
+}
+
+.modal__title {
+  margin: 0 0 8px;
+  font-size: 17px;
+  letter-spacing: 0.04em;
+}
+
+.modal__desc {
+  margin: 0 0 18px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.modal__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.modal__actions .btn { min-width: 120px; }

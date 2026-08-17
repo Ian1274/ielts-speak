@@ -102,18 +102,19 @@ select:focus-visible {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 5px;
+  padding: 6px;
   margin-bottom: 20px;
   width: fit-content;
+  box-shadow: var(--shadow-card);
 }
 
 .mode-nav__item {
   display: inline-flex;
   align-items: center;
-  padding: 8px 22px;
+  padding: 12px 32px;
   border-radius: 999px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--muted);
   text-decoration: none;
@@ -129,7 +130,7 @@ select:focus-visible {
 
 @media (max-width: 480px) {
   .mode-nav { width: 100%; }
-  .mode-nav__item { flex: 1; justify-content: center; padding: 10px 8px; }
+  .mode-nav__item { flex: 1; justify-content: center; padding: 13px 8px; font-size: 15px; }
 }
 
 /* ── tabs ───────────────────────────────────────────────── */

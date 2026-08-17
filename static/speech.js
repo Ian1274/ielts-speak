@@ -46,31 +46,46 @@ function getVoiceList() {
   return window.speechSynthesis.getVoices() || [];
 }
 
-function pickVoice(voices) {
+// gender: "female" | "male" | null — 兜底时尽量匹配所选音色性别,
+// 避免 TTS 失败时浏览器音色跳变(女声选 Jennifer 却听到男声)。
+const GENDER_MARKERS = {
+  female: ["female", "woman", "girl", "samantha", "victoria", "karen", "zira", "aria", "jenny"],
+  male: ["male", "man", "boy", "daniel", "george", "david", "guy", "fred", "alex"],
+};
+
+function pickVoice(voices, gender = null) {
   const byLang = (prefix) => voices.find((v) => v.lang.toLowerCase().startsWith(prefix));
-  return byLang("en-us") || byLang("en") || voices.find((v) => v.lang.toLowerCase().includes("en")) || null;
+  const en = byLang("en-us") || byLang("en") || voices.find((v) => v.lang.toLowerCase().includes("en")) || null;
+  if (!en || !gender) return en;
+  const markers = GENDER_MARKERS[gender] || [];
+  const matched = voices.find(
+    (v) =>
+      v.lang.toLowerCase().includes("en") &&
+      markers.some((m) => v.name.toLowerCase().includes(m))
+  );
+  return matched || en;
 }
 
 export function isSupported() {
   return "speechSynthesis" in window;
 }
 
-export function ensureVoices() {
+export function ensureVoices(gender = null) {
   if (voicesPromise) return voicesPromise;
   voicesPromise = new Promise((resolve) => {
     const voices = getVoiceList();
     if (voices.length > 0) {
-      resolve(pickVoice(voices));
+      resolve(pickVoice(voices, gender));
       return;
     }
     const onChanged = () => {
       window.speechSynthesis.removeEventListener("voiceschanged", onChanged);
-      resolve(pickVoice(getVoiceList()));
+      resolve(pickVoice(getVoiceList(), gender));
     };
     window.speechSynthesis.addEventListener("voiceschanged", onChanged);
     setTimeout(() => {
       window.speechSynthesis.removeEventListener("voiceschanged", onChanged);
-      resolve(pickVoice(getVoiceList()));
+      resolve(pickVoice(getVoiceList(), gender));
     }, 3000);
   });
   return voicesPromise;

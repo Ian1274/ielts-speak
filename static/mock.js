@@ -15,11 +15,7 @@ const els = {
   start: $("start"),
   error: $("error"),
   partLabel: $("partLabel"),
-  nthLabel: $("nthLabel"),
-  progressLabel: $("progressLabel"),
-  subtitle: $("subtitle"),
   cuecard: $("cuecard"),
-  cuecardTopic: $("cuecardTopic"),
   cuecardBody: $("cuecardBody"),
   timer: $("timer"),
   hint: $("hint"),
@@ -28,6 +24,8 @@ const els = {
   btnSkip: $("btnSkip"),
   btnRepeat: $("btnRepeat"),
   btnQuit: $("btnQuit"),
+  quitModal: $("quitModal"),
+  quitConfirm: $("quitConfirm"),
   summaryTable: $("summaryTable"),
   backHome: $("backHome"),
   authUser: $("authUser"),
@@ -52,7 +50,6 @@ const s = {
   stageStart: 0,
   timerId: null,
   timerDeadline: 0,
-  lastSpoken: "",
   pending: null,      // 当前等待的按键 {key, resolve}
   browserVoice: null,
 };
@@ -117,8 +114,23 @@ els.btnNext.addEventListener("click", () => resolveAction("next"));
 els.btnSkip.addEventListener("click", () => resolveAction("skip"));
 els.btnRepeat.addEventListener("click", () => resolveAction("repeat"));
 
-els.btnQuit.addEventListener("click", async () => {
-  if (!confirm("退出 = 放弃本场考试,已答题目不记录。确定退出?")) return;
+// ── 退出确认:页面内弹层,确认后放弃本场考试 ────────────────
+function showQuitModal() {
+  els.quitModal.hidden = false;
+  els.quitModal.setAttribute("aria-hidden", "false");
+}
+function hideQuitModal() {
+  els.quitModal.hidden = true;
+  els.quitModal.setAttribute("aria-hidden", "true");
+}
+
+els.btnQuit.addEventListener("click", showQuitModal);
+for (const el of document.querySelectorAll("[data-quit-close]")) {
+  el.addEventListener("click", hideQuitModal);
+}
+
+els.quitConfirm.addEventListener("click", async () => {
+  hideQuitModal();
   cancel();
   stopTimer();
   const sid = s.sessionId;
@@ -171,14 +183,12 @@ async function startExam() {
   s.durations = {};
   s.pending = null;
 
-  els.nthLabel.textContent = `第 ${s.nth} 次考试`;
   els.viewConfig.hidden = true;
   els.viewExam.hidden = false;
   els.viewSummary.hidden = true;
   els.cuecard.hidden = true;
   els.timer.hidden = true;
   els.partLabel.textContent = "入场";
-  els.progressLabel.hidden = true;
   setActions({ id: true });
   els.hint.textContent = "请出示证件,开始考试";
 
@@ -198,14 +208,10 @@ async function startExam() {
 async function beginP1() {
   s.state = "p1";
   els.partLabel.textContent = "Part 1";
-  els.progressLabel.hidden = false;
   s.stageStart = performance.now();
   const p1Items = s.queue.filter((q) => q.part === "P1");
-  let done = 0;
   for (const item of p1Items) {
     if (s.state !== "p1") return;
-    done += 1;
-    els.progressLabel.textContent = `第 ${done} / ${s.p1Total} 问`;
     const act = await askQuestion(item);
     if (act === "stop") return; // next/skip 都继续循环
   }
@@ -215,8 +221,6 @@ async function beginP1() {
 
 // 提问一轮:播放 → 等按键;重复则重播后继续等;继续记入已答,跳过不记。
 async function askQuestion(item) {
-  els.subtitle.textContent = item.text;
-  s.lastSpoken = item.text;
   await speak(item.text);
   els.hint.textContent = "点击「继续」进入下一问,「跳过」略过此题";
   setActions({ next: true, skip: true, repeat: true });
@@ -233,23 +237,19 @@ async function askQuestion(item) {
 }
 
 async function beginP2() {
-  // 过渡语同时题卡上屏
+  // 考官过渡语说完题卡才上屏;倒计时结束题卡消失;全程不显示字幕
   s.state = "p2prep";
   els.partLabel.textContent = "Part 2 · 准备";
-  els.progressLabel.hidden = true;
   s.stageStart = performance.now();
-  renderCuecard();
-  els.subtitle.textContent = s.scripts.p2Transition;
-  s.lastSpoken = s.scripts.p2Transition;
   setActions({});
   els.hint.textContent = "考官正在说明 Part 2 要求…";
   await speak(s.scripts.p2Transition);
   if (s.state !== "p2prep") return;
+  renderCuecard();
   els.hint.textContent = "1 分钟准备,可做笔记";
   await countdown(60);
+  hideCuecard();
   if (s.state !== "p2prep") return;
-  els.subtitle.textContent = s.scripts.p2PrepEnd;
-  s.lastSpoken = s.scripts.p2PrepEnd;
   await speak(s.scripts.p2PrepEnd);
   if (s.state !== "p2prep") return;
   els.hint.textContent = "点击「继续」开始陈述";
@@ -261,13 +261,11 @@ async function beginP2() {
 }
 
 async function beginTalk() {
+  // 陈述无倒计时:说完自己点「继续」进 P3
   s.state = "p2talk";
   els.partLabel.textContent = "Part 2 · 陈述";
   s.stageStart = performance.now();
-  els.hint.textContent = "连续陈述,题卡常驻";
-  await countdown(120); // 到点停止,不自动前进
-  if (s.state !== "p2talk") return;
-  els.hint.textContent = "时间到。点击「继续」进入 Part 3";
+  els.hint.textContent = "陈述完毕,点击「继续」进入 Part 3";
   setActions({ next: true });
   const act = await waitAction("next");
   if (act !== "next") return;
@@ -278,15 +276,10 @@ async function beginTalk() {
 async function beginP3() {
   s.state = "p3";
   els.partLabel.textContent = "Part 3";
-  els.progressLabel.hidden = false;
   s.stageStart = performance.now();
-  els.cuecard.hidden = true;
-  $("mockScreen").classList.remove("is-cue");
+  hideCuecard();
   const p3Items = s.queue.filter((q) => q.part === "P3");
-  const total = p3Items.length;
 
-  els.subtitle.textContent = s.scripts.p3Transition;
-  s.lastSpoken = s.scripts.p3Transition;
   setActions({});
   els.hint.textContent = "考官正在过渡到 Part 3…";
   await speak(s.scripts.p3Transition);
@@ -295,11 +288,8 @@ async function beginP3() {
   await sleep(3000); // 过渡语后停顿 3 秒
   if (s.state !== "p3") return;
 
-  let done = 0;
   for (const item of p3Items) {
     if (s.state !== "p3") return;
-    done += 1;
-    els.progressLabel.textContent = `第 ${done} / ${total} 问`;
     const act = await askQuestion(item);
     if (act === "stop") return; // next/skip 都继续循环
   }
@@ -311,14 +301,11 @@ async function beginClose() {
   s.state = "summary";
   els.partLabel.textContent = "结束";
   setActions({});
-  els.subtitle.textContent = s.scripts.closing;
-  s.lastSpoken = s.scripts.closing;
   await speak(s.scripts.closing);
   showSummary();
 }
 
 function renderCuecard() {
-  els.cuecardTopic.textContent = s.packet.p2.topic;
   els.cuecardBody.replaceChildren();
   for (const line of s.packet.p2.card) {
     const p = document.createElement("p");
@@ -329,13 +316,20 @@ function renderCuecard() {
   $("mockScreen").classList.add("is-cue");
 }
 
+function hideCuecard() {
+  els.cuecard.hidden = true;
+  $("mockScreen").classList.remove("is-cue");
+}
+
 function showSummary() {
   els.viewExam.hidden = true;
   els.viewSummary.hidden = false;
   els.summaryTable.replaceChildren();
-  const order = ["入场", "P1", "P2 准备", "P2 陈述", "P3"];
-  const total = order.reduce((acc, k) => acc + (s.durations[k] || 0), 0);
-  const rows = [...order.map((k) => [k, s.durations[k] || 0]), ["总时长", total]];
+  const rows = [
+    ["P1 答题", s.durations["P1"] || 0],
+    ["P2 答题", s.durations["P2 陈述"] || 0],
+    ["P3 答题", s.durations["P3"] || 0],
+  ];
   for (const [name, sec] of rows) {
     const tr = document.createElement("tr");
     const tdName = document.createElement("td");
@@ -389,17 +383,15 @@ function stopTimer() {
   }
 }
 
-// ── 语音:服务器 TTS → 浏览器语音,字幕始终显示 ─────────────
+// ── 语音:服务器 TTS → 浏览器语音;不显示字幕,只听语音 ────
 async function speak(text) {
-  els.subtitle.textContent = text;
-  s.lastSpoken = text;
   try {
     await speakTts(text, s.voice, 1.0);
     return;
   } catch (err) {
     if (err instanceof CancelledError || s.state === "summary" && s.pending === null) return;
     if (isSupported()) {
-      if (!s.browserVoice) s.browserVoice = await ensureVoices();
+      if (!s.browserVoice) s.browserVoice = await ensureVoices(s.voice === "Jennifer" ? "female" : "male");
       if (s.browserVoice) {
         try {
           await speakBrowser(text, s.browserVoice);
@@ -434,8 +426,9 @@ if (savedSection) {
 }
 const savedVoice = localStorage.getItem("ielts-mock-voice");
 if (savedVoice) {
-  s.voice = savedVoice;
-  setActive(els.chipsVoice, savedVoice);
+  // Ryan 已由 Ethan 替代(MaaS 合成音调错误),旧选择自动迁移
+  s.voice = savedVoice === "Ryan" ? "Ethan" : savedVoice;
+  setActive(els.chipsVoice, s.voice);
 }
 
 els.start.addEventListener("click", () => startExam());
