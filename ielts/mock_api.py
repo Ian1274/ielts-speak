@@ -22,7 +22,6 @@ from ielts.users_api import COOKIE_NAME
 
 FIRST_TOPICS = (mock_fixed.P1_TOPIC_A, mock_fixed.P1_TOPIC_B)
 P1_TOPIC_COUNT = 2
-P2_FOLLOWUP_COUNT = 3
 MAX_DURATION = 3600  # seconds; upper bound for client-reported stage timings
 
 
@@ -60,18 +59,18 @@ def _completed_count(conn, user_id: int) -> int:
 
 def _draw_packet(payload: dict, section: str, recent: Counter, rng: random.Random) -> dict:
     """Draw the full exam packet; every question carries a history item_key."""
-    # P1 第一主题:固定首问 + 备选抽 2
+    # P1 第一主题:固定首问 + 追加 1 问(共 2 问)
     first = rng.choice(FIRST_TOPICS)
-    backups = rng.sample(first["backup"], 2)
+    backups = rng.sample(first["backup"], 1)
     first_questions = [
         {"text": text, "key": item_key(section, "P1", first["topic"], text)}
         for text in (first["lead"],) + tuple(backups)
     ]
 
-    # P1 第二、三主题:随机 2 主题 × 每主题 2–3 问(主题不重复)
+    # P1 第二、三主题:随机 2 主题 × 每主题固定 2 问(主题不重复)
     p1_topics = []
     for t in sample_topics(payload, section, "P1", P1_TOPIC_COUNT, recent, rng):
-        count = rng.choice((2, 3))
+        count = 2
         texts, keys = sample_questions_from_topic(t, section, "P1", count, recent, rng)
         p1_topics.append(
             {
@@ -87,13 +86,14 @@ def _draw_packet(payload: dict, section: str, recent: Counter, rng: random.Rando
     p2 = items[0]
     p2_key = keys[0]
 
-    # P3:与 P2 同主题抽 3 问;题库漂移时防御性回退到首个 P3 主题
+    # P3:与 P2 同主题抽 3-4 问;题库漂移时防御性回退到首个 P3 主题
+    p3_count = rng.choice((3, 4))
     p3_topic = next(
         (t for t in payload["sections"][section]["P3"] if t["topic"] == p2["topic"]),
         payload["sections"][section]["P3"][0],
     )
     p3_texts, p3_keys = sample_questions_from_topic(
-        p3_topic, section, "P3", P2_FOLLOWUP_COUNT, recent, rng
+        p3_topic, section, "P3", p3_count, recent, rng
     )
 
     return {

@@ -35,17 +35,17 @@ def test_mock_session_requires_login_401(client):
 def test_mock_session_packet_shape(client):
     body = create_session(client, helpers.admin_headers(client))
     packet = body["packet"]
-    # P1 第一主题:固定首问 + 备选抽 2
-    assert len(packet["p1First"]["questions"]) == 3
+    # P1 第一主题:固定首问 + 追加 1 问
+    assert len(packet["p1First"]["questions"]) == 2
     assert packet["p1First"]["topic"] in ("Work or studies", "Hometown")
-    # 第二、三主题:2 个不同主题 × 每主题 2–3 问
+    # 第二、三主题:2 个不同主题 × 每主题固定 2 问
     assert len(packet["p1Topics"]) == 2
     assert packet["p1Topics"][0]["topic"] != packet["p1Topics"][1]["topic"]
-    assert all(2 <= len(t["questions"]) <= 3 for t in packet["p1Topics"])
+    assert all(len(t["questions"]) == 2 for t in packet["p1Topics"])
     # P2 题卡
     assert packet["p2"]["card"]
-    # P3:3 问且主题与 P2 一致
-    assert len(packet["p3"]["questions"]) == 3
+    # P3:3-4 问且主题与 P2 一致
+    assert 3 <= len(packet["p3"]["questions"]) <= 4
     assert packet["p3"]["topic"] == packet["p2"]["topic"]
     # 脚本齐全,首次考试 nth = 1
     for key in ("opening", "idCheck", "p2Transition", "p2PrepEnd", "p3Transition", "closing"):
