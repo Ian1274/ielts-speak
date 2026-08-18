@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from ielts.admin_api import router as admin_router
 from ielts.auth import ensure_admin, require_user
 from ielts.db import connect, init_db
+from ielts.feedback_api import create_feedback_router
 from ielts.mock_api import create_mock_router
 from ielts.session_api import create_session_router
 from ielts.users_api import COOKIE_NAME, router as users_router
@@ -45,6 +46,7 @@ def create_app() -> FastAPI:
     app.include_router(users_router)
     app.include_router(create_session_router(payload))
     app.include_router(create_mock_router(payload))
+    app.include_router(create_feedback_router())
     app.include_router(admin_router)
 
     @app.get("/health")

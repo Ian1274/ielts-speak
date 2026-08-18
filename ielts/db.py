@@ -49,6 +49,18 @@ CREATE TABLE IF NOT EXISTS history (
     mock_session_id INTEGER NULL REFERENCES mock_sessions(id)
 );
 CREATE INDEX IF NOT EXISTS idx_history_user_time ON history(user_id, drawn_at);
+CREATE TABLE IF NOT EXISTS feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    mode TEXT NOT NULL DEFAULT 'practice',
+    part TEXT NOT NULL,
+    question_text TEXT NOT NULL,
+    transcript TEXT NOT NULL,
+    duration_sec REAL NOT NULL,
+    scores_json TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id, created_at);
 """
 
 
