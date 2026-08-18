@@ -398,6 +398,114 @@ select:focus-visible {
   font-size: 14px;
 }
 
+/* ── 作答反馈(ASR 转写 + 雅思标准评分)────────────────── */
+.feedback {
+  margin-top: 24px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-card);
+}
+
+.feedback__title {
+  margin: 0 0 10px;
+  font-size: 16px;
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feedback__title::before {
+  content: "✦";
+  color: var(--accent);
+}
+
+.feedback__question {
+  margin: 0 0 12px;
+  font-family: var(--font-serif);
+  font-size: 15px;
+  color: var(--paper-muted);
+}
+
+.feedback__status {
+  margin: 0;
+  font-size: 13px;
+  color: var(--accent-text);
+}
+
+.feedback__scores { display: grid; gap: 8px; margin: 4px 0 14px; }
+
+.feedback__score {
+  display: grid;
+  grid-template-columns: 56px 1fr 24px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.feedback__bar {
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(43, 41, 34, 0.08);
+  overflow: hidden;
+}
+
+.feedback__bar span {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent2), var(--accent));
+}
+
+.feedback__score b {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.feedback__note {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--paper-muted);
+}
+
+.feedback__label {
+  margin: 12px 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--paper-muted);
+  text-transform: uppercase;
+}
+
+.feedback__transcript {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
+.feedback__list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.feedback__list li::marker { color: var(--accent); }
+
+.feedback__model {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
 /* ── footer ─────────────────────────────────────────────── */
 .foot {
   margin-top: 32px;

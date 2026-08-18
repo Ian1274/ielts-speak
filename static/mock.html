@@ -69,14 +69,20 @@
           <div class="mock__screen" id="mockScreen">
             <!-- 主内容区:考官/考生/题卡,flex 占满,倒计时与提示独立成行不遮挡 -->
             <div class="mock__screen__main">
-              <!-- 考官:中央占位(后续接 AI 人);不显示字幕,只听语音 -->
+              <!-- 考官:卡通形象随音色切换(女 Jennifer/男 Ethan);不显示字幕,只听语音 -->
               <figure class="examiner" id="examiner">
-                <div class="examiner__window" aria-hidden="true"><span class="examiner__face">👤</span></div>
-                <figcaption class="examiner__name">Alex · 考官</figcaption>
+                <div class="examiner__window" aria-hidden="true">
+                  <img id="examinerImg" class="examiner__img" alt="考官卡通形象" hidden>
+                  <span class="examiner__face" id="examinerFace">👤</span>
+                </div>
+                <figcaption class="examiner__name" id="examinerName">考官</figcaption>
               </figure>
 
-              <!-- 考生画面:右上角占位(后续接摄像头) -->
-              <div class="selfview" aria-hidden="true"><span class="selfview__face">🎥</span></div>
+              <!-- 考生画面:右上角实时摄像头;拒绝授权时保留占位 -->
+              <div class="selfview" aria-hidden="true">
+                <video id="selfVideo" autoplay playsinline muted hidden></video>
+                <span class="selfview__face" id="selfFace">🎥</span>
+              </div>
 
               <!-- P2 题卡:过渡语时上屏,只显正文,不显主题 -->
               <article class="cuecard" id="cuecard" hidden>
@@ -104,6 +110,11 @@
       <section class="panel summary" id="viewSummary" hidden aria-label="考试结束">
         <h2 class="summary__title">考试结束</h2>
         <table class="summary__table" id="summaryTable"></table>
+        <section class="feedback" id="mockFeedback" hidden aria-label="口语反馈">
+          <h3 class="feedback__title">口语反馈</h3>
+          <p class="feedback__note">逐段分析你的回答(雅思标准评分,转写文本)。</p>
+          <div class="feedback__mocklist" id="mockFeedbackList"></div>
+        </section>
         <button class="btn btn--primary btn--block config__start" id="backHome">返回首页</button>
       </section>
     </main>

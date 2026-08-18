@@ -87,6 +87,14 @@
   display: grid;
   place-items: center;
   font-size: 52px;
+  overflow: hidden;
+}
+
+/* 考官卡通图:铺满窗口,缺图时退回 emoji 占位 */
+.examiner__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* LIVE 点:视频通话在录制的考场隐喻;reduced-motion 下由全局规则静止 */
@@ -115,7 +123,7 @@
   50% { opacity: 0.45; }
 }
 
-/* 考生画面占位:右上角,后续接摄像头 */
+/* 考生画面:右上角实时摄像头;未授权时保留占位 */
 .selfview {
   position: absolute;
   top: 14px;
@@ -131,6 +139,14 @@
   font-size: 30px;
   opacity: 0.92;
   z-index: 2;
+  overflow: hidden;
+}
+
+.selfview video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* 镜像:照镜子视角 */
 }
 
 /* P2 题卡上屏时隐藏考生画面,避免遮挡题卡文字 */
@@ -236,6 +252,31 @@
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
+
+/* ── 反馈折叠列表(summary 页)────────────────────────── */
+.feedback__mocklist {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  text-align: left;
+}
+
+.feedback__mockitem {
+  background: rgba(255, 253, 248, 0.7);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.feedback__mockitem summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.feedback__mockitem .feedback__status { margin-top: 6px; }
+.feedback__mockitem .feedback__list { margin-top: 8px; }
 
 /* ── 移动端 ─────────────────────────────────────────────── */
 @media (max-width: 560px) {

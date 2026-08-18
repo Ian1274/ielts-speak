@@ -1,6 +1,7 @@
 import { validateConfig, prepareSession } from "./sampler.js";
 import { speakTts, speakBrowser, ensureVoices, isSupported, cancel, CancelledError } from "./speech.js";
 import { fetchMe, logout, refreshAuthUI } from "./auth.js";
+import { startRecording, blobToBase64 } from "./recorder.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -36,6 +37,14 @@ const els = {
   pause: $("pause"),
   doneLine: $("doneLine"),
   doneCount: $("doneCount"),
+  feedback: $("feedback"),
+  fbQuestion: $("fbQuestion"),
+  fbStatus: $("fbStatus"),
+  fbScores: $("fbScores"),
+  fbTranscript: $("fbTranscript"),
+  fbIssues: $("fbIssues"),
+  fbAdvice: $("fbAdvice"),
+  fbModel: $("fbModel"),
   authUser: $("authUser"),
   authAvatar: $("authAvatar"),
   authAdminBtn: $("authAdminBtn"),
@@ -60,6 +69,8 @@ const session = {
   phase: null,        // "audio" | "countdown" | null — 当前题所处阶段
   deadline: null,     // 倒计时绝对截止时间戳(ms)
   pauseStart: null,   // 本次暂停起始时间戳(ms)
+  recorder: null,     // 当前题录音句柄(startRecording 产物)
+  recStart: null,     // 录音起始时间戳(ms)
 };
 
 let data = null;
@@ -334,11 +345,110 @@ async function runSequence() {
       }
     }
     session.phase = "countdown";
+    session.recorder = await startRecording(); // 可能 null(无麦克风/拒授权)
+    session.recStart = Date.now();
     await countdown();
     session.phase = null;
-    if (session.cancelled) break;
+    const rec = session.recorder;
+    session.recorder = null;
+    if (session.cancelled) {
+      if (rec) await rec.stop(); // 放弃本段录音
+      break;
+    }
+    if (rec) {
+      const blob = await rec.stop();
+      if (blob) analyzeAnswer(item, blob, session.recStart);
+    }
   }
   if (!session.cancelled) finishSession();
+}
+
+// 录音 → ASR → 评分 → 反馈卡;失败只显示提示,不打断流程
+async function analyzeAnswer(item, blob, recStart) {
+  const durationSec = Math.max(1, (Date.now() - recStart) / 1000);
+  // P2 item 无 text 字段(题卡 {topic, card}),用主题兜底
+  const questionText = item.text ?? item.topic ?? "P2 话题";
+  let audioB64;
+  try {
+    audioB64 = await blobToBase64(blob);
+  } catch {
+    return;
+  }
+  els.feedback.hidden = false;
+  els.fbQuestion.textContent = questionText;
+  els.fbStatus.hidden = false;
+  els.fbStatus.textContent = "正在分析你的回答…";
+  try {
+    const resp = await fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        audio_b64: audioB64,
+        mime: blob.type || "audio/webm",
+        duration_sec: durationSec,
+        part: session.part,
+        question_text: questionText,
+        mode: "practice",
+      }),
+    });
+    const j = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      // 422 时 FastAPI 的 detail 是数组:序列化展示,不拼 [object Object]
+      const detail = typeof j.detail === "string"
+        ? j.detail
+        : JSON.stringify(j.detail || "反馈生成失败");
+      throw new Error(detail);
+    }
+    renderFeedback(j);
+  } catch (err) {
+    els.fbStatus.textContent = err.message + " — 不影响练习,可重听再答。";
+  }
+}
+
+function renderFeedback(j) {
+  els.fbStatus.hidden = true;
+  els.fbTranscript.textContent = j.transcript;
+  els.fbIssues.replaceChildren(...j.issues.map((t) => {
+    const li = document.createElement("li");
+    li.textContent = t;
+    return li;
+  }));
+  els.fbAdvice.replaceChildren(...j.advice.map((t) => {
+    const li = document.createElement("li");
+    li.textContent = t;
+    return li;
+  }));
+  els.fbModel.textContent = j.model_answer;
+  els.fbScores.replaceChildren();
+  const dims = [
+    ["流利度", j.scores.fluency],
+    ["词汇", j.scores.lexical],
+    ["语法", j.scores.grammar],
+    ["发音", j.scores.pronunciation],
+  ];
+  for (const [name, score] of dims) {
+    const d = document.createElement("div");
+    d.className = "feedback__score";
+    const bar = document.createElement("div");
+    bar.className = "feedback__bar";
+    bar.innerHTML = `<span style="width:${(score ?? 0) * 11}%"></span>`; // 9 分制 → 99%
+    d.append(
+      Object.assign(document.createElement("span"), { textContent: name }),
+      bar,
+      Object.assign(document.createElement("b"), { textContent: score == null ? "—" : String(score) }),
+    );
+    els.fbScores.appendChild(d);
+  }
+  const note = document.createElement("p");
+  note.className = "feedback__note";
+  note.textContent = j.summary;
+  els.fbScores.appendChild(note);
+  if (j.pron_reason) {
+    const p = document.createElement("p");
+    p.className = "feedback__note";
+    p.textContent = `发音:${j.pron_reason}`;
+    els.fbScores.appendChild(p);
+  }
 }
 
 // 语音链路：服务器 TTS → 浏览器语音 → 文字显示

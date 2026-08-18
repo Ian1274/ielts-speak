@@ -3,6 +3,7 @@
 
 import { speakTts, speakBrowser, ensureVoices, isSupported, cancel, CancelledError } from "./speech.js";
 import { fetchMe, logout, refreshAuthUI } from "./auth.js";
+import { startRecording, blobToBase64 } from "./recorder.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -15,6 +16,11 @@ const els = {
   start: $("start"),
   error: $("error"),
   partLabel: $("partLabel"),
+  examinerImg: $("examinerImg"),
+  examinerFace: $("examinerFace"),
+  examinerName: $("examinerName"),
+  selfVideo: $("selfVideo"),
+  selfFace: $("selfFace"),
   cuecard: $("cuecard"),
   cuecardBody: $("cuecardBody"),
   timer: $("timer"),
@@ -27,6 +33,8 @@ const els = {
   quitModal: $("quitModal"),
   quitConfirm: $("quitConfirm"),
   summaryTable: $("summaryTable"),
+  mockFeedback: $("mockFeedback"),
+  mockFeedbackList: $("mockFeedbackList"),
   backHome: $("backHome"),
   authUser: $("authUser"),
   authAvatar: $("authAvatar"),
@@ -52,6 +60,8 @@ const s = {
   timerDeadline: 0,
   pending: null,      // 当前等待的按键 {key, resolve}
   browserVoice: null,
+  recordings: [],     // 已录答题段 {part, text, blob, durationSec};summary 后逐段分析
+  camStream: null,    // 摄像头流;退出/结束时释放
 };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -85,7 +95,49 @@ bindChips(els.chipsSection, (val) => {
 bindChips(els.chipsVoice, (val) => {
   s.voice = val;
   localStorage.setItem("ielts-mock-voice", val);
+  updateExaminer();
 });
+
+// ── 考官形象:音色女 → 女考官图 + Jennifer,男 → 男考官图 + Ethan ──
+function updateExaminer() {
+  const female = s.voice === "Jennifer";
+  const img = els.examinerImg;
+  img.src = female ? "img/examiner-female.png" : "img/examiner-male.png";
+  img.onload = () => {
+    img.hidden = false;
+    els.examinerFace.hidden = true;
+  };
+  img.onerror = () => {
+    // 图缺失(未生成/未上传):退回 emoji 占位
+    img.onerror = null;
+    img.hidden = true;
+    els.examinerFace.hidden = false;
+  };
+  els.examinerName.textContent = female ? "Jennifer · 考官" : "Ethan · 考官";
+}
+
+// ── 摄像头:考生实时画面;拒绝授权/无设备时保留占位,不影响考试 ──
+async function startCamera() {
+  if (s.camStream) return;
+  try {
+    s.camStream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 132 }, height: { ideal: 82 } },
+    });
+    els.selfVideo.srcObject = s.camStream;
+    els.selfVideo.hidden = false;
+    els.selfFace.hidden = true;
+  } catch { /* 无摄像头或拒授权:保持 🎥 占位 */ }
+}
+
+function stopCamera() {
+  if (s.camStream) {
+    s.camStream.getTracks().forEach((t) => t.stop());
+    s.camStream = null;
+  }
+  els.selfVideo.srcObject = null;
+  els.selfVideo.hidden = true;
+  els.selfFace.hidden = false;
+}
 
 // ── 按键 ───────────────────────────────────────────────────
 function setActions({ id = false, next = false, skip = false, repeat = false }) {
@@ -133,6 +185,7 @@ els.quitConfirm.addEventListener("click", async () => {
   hideQuitModal();
   cancel();
   stopTimer();
+  stopCamera();
   const sid = s.sessionId;
   try {
     if (sid !== null) {
@@ -149,6 +202,7 @@ els.quitConfirm.addEventListener("click", async () => {
 // ── 考试流程 ───────────────────────────────────────────────
 async function startExam() {
   setError("");
+  startCamera(); // 非阻塞:权限框弹出时考试照走
   let resp;
   try {
     resp = await fetch("/api/mock/session", {
@@ -219,9 +273,12 @@ async function beginP1() {
   await beginP2();
 }
 
-// 提问一轮:播放 → 等按键;重复则重播后继续等;继续记入已答,跳过不记。
+// 提问一轮:播放 → 录音 → 等按键;重复则重播后继续等(录音不中断);
+// 继续记入已答并保留录音,跳过丢弃录音。
 async function askQuestion(item) {
   await speak(item.text);
+  const rec = await startRecording();
+  const recStart = Date.now();
   els.hint.textContent = "点击「继续」进入下一问,「跳过」略过此题";
   setActions({ next: true, skip: true, repeat: true });
   for (;;) {
@@ -231,7 +288,20 @@ async function askQuestion(item) {
       await speak(item.text);
       continue;
     }
-    if (act === "next") s.answered.push(item.key);
+    if (act === "next") {
+      s.answered.push(item.key);
+      if (rec) {
+        const blob = await rec.stop();
+        if (blob) {
+          s.recordings.push({
+            part: item.part, text: item.text, blob,
+            durationSec: (Date.now() - recStart) / 1000,
+          });
+        }
+      }
+    } else if (rec) {
+      await rec.stop(); // 跳过:丢弃录音
+    }
     return act;
   }
 }
@@ -267,8 +337,19 @@ async function beginTalk() {
   s.stageStart = performance.now();
   els.hint.textContent = "陈述完毕,点击「继续」进入 Part 3";
   setActions({ next: true });
+  const rec = await startRecording();
+  const recStart = Date.now();
   const act = await waitAction("next");
   if (act !== "next") return;
+  if (rec) {
+    const blob = await rec.stop();
+    if (blob) {
+      s.recordings.push({
+        part: "P2", text: s.packet.p2.topic, blob,
+        durationSec: (Date.now() - recStart) / 1000,
+      });
+    }
+  }
   s.durations["P2 陈述"] = (performance.now() - s.stageStart) / 1000;
   await beginP3();
 }
@@ -301,6 +382,7 @@ async function beginClose() {
   s.state = "summary";
   els.partLabel.textContent = "结束";
   setActions({});
+  stopCamera(); // summary 页无考生画面,考试结束释放摄像头
   await speak(s.scripts.closing);
   showSummary();
 }
@@ -349,6 +431,103 @@ function showSummary() {
       durations: s.durations,
     }),
   }).catch(() => {});
+  uploadFeedback();
+}
+
+// ── 反馈:模拟结束逐段上传分析,每段一个折叠卡片 ───────────
+async function uploadFeedback() {
+  if (s.recordings.length === 0) return;
+  els.mockFeedback.hidden = false;
+  els.mockFeedbackList.replaceChildren();
+  for (const r of s.recordings) {
+    const details = document.createElement("details");
+    details.className = "feedback__mockitem";
+    const summary = document.createElement("summary");
+    summary.textContent = `${r.part} · ${r.text.slice(0, 46)}${r.text.length > 46 ? "…" : ""}`;
+    details.appendChild(summary);
+    const status = document.createElement("p");
+    status.className = "feedback__status";
+    status.textContent = "正在分析…";
+    details.appendChild(status);
+    els.mockFeedbackList.appendChild(details);
+
+    try {
+      const audioB64 = await blobToBase64(r.blob);
+      const resp = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          audio_b64: audioB64,
+          mime: r.blob.type || "audio/webm",
+          duration_sec: Math.max(1, r.durationSec),
+          part: r.part,
+          question_text: r.text,
+          mode: "mock",
+        }),
+      });
+      const j = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        const detail = typeof j.detail === "string"
+          ? j.detail
+          : JSON.stringify(j.detail || "反馈生成失败");
+        throw new Error(detail);
+      }
+      renderMockItem(details, j);
+    } catch (err) {
+      status.textContent = err.message + " — 可稍后在练习模式重答此段。";
+    }
+  }
+}
+
+function renderMockItem(details, j) {
+  const status = details.querySelector(".feedback__status");
+  status.textContent = `转写:${j.transcript}`;
+  const scores = document.createElement("div");
+  scores.className = "feedback__scores";
+  const dims = [
+    ["流利度", j.scores.fluency],
+    ["词汇", j.scores.lexical],
+    ["语法", j.scores.grammar],
+    ["发音", j.scores.pronunciation],
+  ];
+  for (const [name, score] of dims) {
+    const d = document.createElement("div");
+    d.className = "feedback__score";
+    const bar = document.createElement("div");
+    bar.className = "feedback__bar";
+    bar.innerHTML = `<span style="width:${(score ?? 0) * 11}%"></span>`;
+    d.append(
+      Object.assign(document.createElement("span"), { textContent: name }),
+      bar,
+      Object.assign(document.createElement("b"), { textContent: score == null ? "—" : String(score) }),
+    );
+    scores.appendChild(d);
+  }
+  const note = document.createElement("p");
+  note.className = "feedback__note";
+  note.textContent = j.summary;
+  scores.appendChild(note);
+  if (j.pron_reason) {
+    const p = document.createElement("p");
+    p.className = "feedback__note";
+    p.textContent = `发音:${j.pron_reason}`;
+    scores.appendChild(p);
+  }
+  details.appendChild(scores);
+
+  const issues = document.createElement("ul");
+  issues.className = "feedback__list";
+  issues.append(...j.issues.map((t) => {
+    const li = document.createElement("li");
+    li.textContent = t;
+    return li;
+  }));
+  details.appendChild(issues);
+
+  const model = document.createElement("p");
+  model.className = "feedback__model";
+  model.textContent = `示范:${j.model_answer}`;
+  details.appendChild(model);
 }
 
 els.backHome.addEventListener("click", () => {
@@ -430,6 +609,7 @@ if (savedVoice) {
   s.voice = savedVoice === "Ryan" ? "Ethan" : savedVoice;
   setActive(els.chipsVoice, s.voice);
 }
+updateExaminer();
 
 els.start.addEventListener("click", () => startExam());
 initAuth();

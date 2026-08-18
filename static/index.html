@@ -124,6 +124,21 @@
           <div class="card__body" id="cardBody"></div>
         </article>
 
+        <section class="feedback" id="feedback" hidden aria-label="作答反馈">
+          <h3 class="feedback__title">作答反馈</h3>
+          <p class="feedback__question" id="fbQuestion"></p>
+          <p class="feedback__status" id="fbStatus" hidden></p>
+          <div class="feedback__scores" id="fbScores"></div>
+          <p class="feedback__label">转写</p>
+          <p class="feedback__transcript" id="fbTranscript"></p>
+          <p class="feedback__label">问题</p>
+          <ul class="feedback__list" id="fbIssues"></ul>
+          <p class="feedback__label">建议</p>
+          <ul class="feedback__list" id="fbAdvice"></ul>
+          <p class="feedback__label">示范回答</p>
+          <p class="feedback__model" id="fbModel"></p>
+        </section>
+
         <div class="session__actions">
           <button class="btn btn--ghost" id="replay" hidden>🔊 重听</button>
           <button class="btn btn--ghost" id="pause" hidden>暂停</button>
